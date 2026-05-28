@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f0f4f8" media="(prefers-color-scheme: light)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NewsReader">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+  <title>NewsReader</title>
+</head>
+<body>
+
+  <!-- 画面1: 媒体選択 -->
+  <div id="screen-select" class="screen active">
+    <header class="app-header">
+      <span class="app-icon">📰</span>
+      <h1>NewsReader</h1>
+      <p class="app-subtitle">世界のニュースを日本語で</p>
+    </header>
+
+    <main class="select-main">
+      <div class="section-title">ニュース媒体を選択</div>
+
+      <div class="source-list">
+        <label class="source-item">
+          <input type="checkbox" name="source" value="bbc" checked>
+          <div class="source-info">
+            <span class="source-flag">🇬🇧</span>
+            <div>
+              <div class="source-name">BBC News World</div>
+              <div class="source-desc">英国公共放送の国際ニュース</div>
+            </div>
+          </div>
+          <span class="source-check">✓</span>
+        </label>
+
+        <label class="source-item">
+          <input type="checkbox" name="source" value="aljazeera" checked>
+          <div class="source-info">
+            <span class="source-flag">🌍</span>
+            <div>
+              <div class="source-name">Al Jazeera English</div>
+              <div class="source-desc">カタール発の国際ニュース</div>
+            </div>
+          </div>
+          <span class="source-check">✓</span>
+        </label>
+
+        <label class="source-item">
+          <input type="checkbox" name="source" value="nhk" checked>
+          <div class="source-info">
+            <span class="source-flag">🇯🇵</span>
+            <div>
+              <div class="source-name">NHK ニュース</div>
+              <div class="source-desc">日本放送協会の最新ニュース</div>
+            </div>
+          </div>
+          <span class="source-check">✓</span>
+        </label>
+
+        <label class="source-item">
+          <input type="checkbox" name="source" value="npr" checked>
+          <div class="source-info">
+            <span class="source-flag">🇺🇸</span>
+            <div>
+              <div class="source-name">NPR</div>
+              <div class="source-desc">米国公共ラジオの国際ニュース</div>
+            </div>
+          </div>
+          <span class="source-check">✓</span>
+        </label>
+      </div>
+
+      <div class="select-actions">
+        <button id="btn-select-all" class="btn btn-secondary">全選択</button>
+        <button id="btn-deselect-all" class="btn btn-secondary">全解除</button>
+      </div>
+
+      <button id="btn-fetch" class="btn btn-primary">
+        <span class="btn-icon">📡</span>
+        最新ニュースを取得
+      </button>
+
+      <div id="mock-notice" class="mock-notice">
+        ⚠️ デモモード: モックデータを表示しています
+      </div>
+    </main>
+  </div>
+
+  <!-- 画面2: ニュース一覧 -->
+  <div id="screen-list" class="screen">
+    <header class="list-header">
+      <button id="btn-back" class="btn-icon-only">←</button>
+      <h2>最新ニュース</h2>
+      <div class="header-spacer"></div>
+    </header>
+
+    <!-- セクションバー: list-main の外に置くことで記事との重なりをゼロにする -->
+    <div id="section-bar" class="section-bar" aria-hidden="true">
+      <span id="section-bar-flag" class="section-bar-flag"></span>
+      <span id="section-bar-name" class="section-bar-name"></span>
+    </div>
+
+    <main id="news-list-main" class="list-main">
+      <!-- JS で動的生成 -->
+    </main>
+  </div>
+
+  <!-- 画面3: 要約モーダル -->
+  <div id="modal-summary" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-overlay" id="modal-overlay"></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+
+      <div class="modal-header">
+        <span id="modal-source-badge" class="source-badge"></span>
+        <button id="modal-close" class="btn-icon-only modal-close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <h3 id="modal-title" class="modal-title"></h3>
+        <div id="modal-date" class="modal-date"></div>
+        <div id="modal-summary-text" class="modal-summary"></div>
+
+        <!-- 関連記事タブ -->
+        <div id="related-section" class="related-section" style="display:none">
+          <div class="related-label">関連記事</div>
+          <div id="related-tabs" class="related-tabs"></div>
+          <div id="related-content" class="related-content"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+          元記事を読む →
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ローディング -->
+  <div id="loading-overlay" class="loading-overlay" style="display:none">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">ニュースを取得中…</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

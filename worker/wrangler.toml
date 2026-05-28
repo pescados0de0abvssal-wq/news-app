@@ -1,0 +1,7 @@
+name = "newsreader-worker"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# デプロイ後に wrangler secret put ANTHROPIC_API_KEY で設定する
+# [vars]
+# ANTHROPIC_API_KEY = ""  # ここに直接書かないこと
