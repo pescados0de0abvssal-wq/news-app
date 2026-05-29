@@ -76,15 +76,16 @@
         </label>
       </div>
 
-      <div class="select-actions">
-        <button id="btn-select-all" class="btn btn-secondary">全選択</button>
-        <button id="btn-deselect-all" class="btn btn-secondary">全解除</button>
-      </div>
+      <hr class="source-divider">
 
       <button id="btn-fetch" class="btn btn-primary">
         <span class="btn-icon">📡</span>
         最新ニュースを取得
       </button>
+
+      <button id="btn-history" class="btn-history-toggle">過去の記事 ▾</button>
+
+      <div id="history-menu" class="history-menu" style="display:none"></div>
 
       <div id="mock-notice" class="mock-notice">
         ⚠️ デモモード: モックデータを表示しています
@@ -95,9 +96,8 @@
   <!-- 画面2: ニュース一覧 -->
   <div id="screen-list" class="screen">
     <header class="list-header">
-      <button id="btn-back" class="btn-icon-only">←</button>
+      <button id="btn-back" class="btn-back">← トップに戻る</button>
       <h2>最新ニュース</h2>
-      <div class="header-spacer"></div>
     </header>
 
     <!-- セクションバー: list-main の外に置くことで記事との重なりをゼロにする -->

@@ -108,7 +108,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 0;
 }
 
 .source-item {
@@ -161,10 +161,11 @@ body {
 
 .source-item:has(input:checked) .source-check { opacity: 1; }
 
-.select-actions {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 24px;
+/* 媒体リストとボタン群の区切り線 */
+.source-divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 20px 0;
 }
 
 /* ===== ボタン ===== */
@@ -226,6 +227,23 @@ body {
 
 .btn-icon-only:active { background: var(--color-border); }
 
+/* ニュース一覧の「← トップに戻る」ボタン */
+.btn-back {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 8px;
+  color: var(--color-accent);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ja);
+  white-space: nowrap;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-back:active { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+
 .btn-icon { font-size: 18px; }
 
 .mock-notice {
@@ -268,13 +286,14 @@ body {
 }
 
 .list-header h2 {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 17px;
   font-weight: 700;
-  flex: 1;
-  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
 }
-
-.header-spacer { width: 40px; }
 
 /* ===== セクションバー =====
  * list-main の外側(list-header 直下)に固定表示。
@@ -573,6 +592,81 @@ body {
   color: #fff;
   font-size: 15px;
   font-family: var(--font-ja);
+}
+
+/* ===== 過去の記事ボタン・サブメニュー ===== */
+.btn-history-toggle {
+  width: 100%;
+  background: var(--color-surface);
+  color: var(--color-text-sub);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 10px;
+  cursor: pointer;
+  font-family: var(--font-ja);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-history-toggle:active { background: var(--color-surface2); }
+
+.history-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  animation: historyFadeIn 0.15s ease-out;
+}
+
+@keyframes historyFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.btn-history-item {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: var(--font-ja);
+  transition: background 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-history-item:active { background: var(--color-surface2); }
+
+.history-item-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent);
+  min-width: 18px;
+  text-align: center;
+}
+
+.history-item-date {
+  flex: 1;
+  color: var(--color-text);
+}
+
+.history-item-sources {
+  font-size: 14px;
+  letter-spacing: 2px;
 }
 
 /* ===== エラー表示 ===== */

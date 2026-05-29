@@ -222,6 +222,7 @@ let currentArticles = [];
 let currentGroups = [];
 let currentModalArticle = null;
 let sectionBarScrollHandler = null;
+let historyMenuOpen = false;
 
 // ===== DOM要素取得 =====
 const screens = {
@@ -239,6 +240,11 @@ function showScreen(name) {
   window.scrollTo(0, 0);
   // list-main が内部スクロールコンテナになったため個別にリセット
   document.getElementById('news-list-main')?.scrollTo(0, 0);
+  // 選択画面に戻る時は履歴メニューを閉じる
+  if (name === 'select') {
+    historyMenuOpen = false;
+    renderHistoryMenu(false);
+  }
 }
 
 function showModal() {
@@ -255,14 +261,6 @@ function showLoading() { loadingOverlay.style.display = 'flex'; }
 function hideLoading() { loadingOverlay.style.display = 'none'; }
 
 // ===== 媒体選択画面 =====
-document.getElementById('btn-select-all').addEventListener('click', () => {
-  document.querySelectorAll('input[name="source"]').forEach(cb => cb.checked = true);
-});
-
-document.getElementById('btn-deselect-all').addEventListener('click', () => {
-  document.querySelectorAll('input[name="source"]').forEach(cb => cb.checked = false);
-});
-
 document.getElementById('btn-back').addEventListener('click', () => {
   showScreen('select');
 });
@@ -281,15 +279,97 @@ document.getElementById('btn-fetch').addEventListener('click', async () => {
     const data = await fetchNews(selected);
     currentArticles = data.articles;
     currentGroups   = data.groups;
+    saveToHistory(data, selected);
     renderNewsList(selected);
-    setupSectionBar();
     showScreen('list');
+    setupSectionBar();
   } catch (err) {
     console.error(err);
     alert(`ニュースの取得に失敗しました。\n${err.message}`);
   } finally {
     hideLoading();
   }
+});
+
+// ===== 履歴管理 (localStorage) =====
+const HISTORY_KEY = 'news-app-history';
+
+function saveToHistory(data, sources) {
+  const history = loadHistory();
+  history.unshift({
+    timestamp: Date.now(),
+    sources,
+    articles: data.articles,
+    groups:   data.groups,
+  });
+  if (history.length > 3) history.pop();
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.warn('履歴の保存に失敗:', e);
+  }
+}
+
+function loadHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function renderHistoryMenu(open) {
+  const toggleBtn = document.getElementById('btn-history');
+  const menu      = document.getElementById('history-menu');
+
+  toggleBtn.textContent = open ? '過去の記事 ▴' : '過去の記事 ▾';
+
+  if (!open) {
+    menu.style.display = 'none';
+    return;
+  }
+
+  const history = loadHistory();
+  menu.innerHTML = '';
+
+  if (history.length === 0) {
+    menu.style.display = 'none';
+    toggleBtn.textContent = '過去の記事 ▾';
+    historyMenuOpen = false;
+    return;
+  }
+
+  history.forEach((item, idx) => {
+    const date  = new Date(item.timestamp);
+    const label = date.toLocaleString('ja-JP', {
+      month: 'numeric', day: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+    const flags = item.sources.map(s => SOURCE_META[s]?.flag || s).join('');
+
+    const btn = document.createElement('button');
+    btn.className = 'btn-history-item';
+    btn.innerHTML = `
+      <span class="history-item-num">${idx + 1}</span>
+      <span class="history-item-date">${label}</span>
+      <span class="history-item-sources">${flags}</span>
+    `;
+    btn.addEventListener('click', () => {
+      currentArticles = item.articles;
+      currentGroups   = item.groups;
+      renderNewsList(item.sources);
+      showScreen('list');
+      setupSectionBar();
+    });
+    menu.appendChild(btn);
+  });
+
+  menu.style.display = 'flex';
+}
+
+document.getElementById('btn-history').addEventListener('click', () => {
+  historyMenuOpen = !historyMenuOpen;
+  renderHistoryMenu(historyMenuOpen);
 });
 
 // ===== ニュース取得 =====
