@@ -1,20 +1,30 @@
 // ===== RSS フィード設定 =====
+// lang: 'ja' の媒体は Claude API での翻訳をスキップし原文をそのまま返す
 const RSS_SOURCES = {
   bbc: {
     name: 'BBC News World',
     url: 'http://feeds.bbci.co.uk/news/world/rss.xml',
+    lang: 'en',
   },
   aljazeera: {
     name: 'Al Jazeera English',
     url: 'https://www.aljazeera.com/xml/rss/all.xml',
-  },
-  nhk: {
-    name: 'NHK ニュース',
-    url: 'https://www.nhk.or.jp/rss/news/cat0.xml',
+    lang: 'en',
   },
   npr: {
     name: 'NPR',
     url: 'https://feeds.npr.org/1004/rss.xml',
+    lang: 'en',
+  },
+  toyokeizai: {
+    name: '東洋経済オンライン',
+    url: 'https://toyokeizai.net/list/feed/rss',
+    lang: 'ja',
+  },
+  scmp: {
+    name: 'South China Morning Post',
+    url: 'https://www.scmp.com/rss/91/feed',
+    lang: 'en',
   },
 };
 
@@ -148,9 +158,26 @@ function stripHtml(str) {
 
 // ===== Claude API 処理 =====
 async function processWithClaude(articles, apiKey) {
-  const articleList = articles.map((a, i) =>
-    `[${i + 1}] 媒体: ${a.source}\nタイトル: ${a.titleOrig}\n概要: ${a.summaryOrig || '(なし)'}`
-  ).join('\n\n');
+  // 日本語記事(lang:'ja')はそのまま通す。英語記事のみ Claude に渡す。
+  const jaArticles = articles.filter(a => RSS_SOURCES[a.source]?.lang === 'ja');
+  const enArticles = articles.filter(a => RSS_SOURCES[a.source]?.lang !== 'ja');
+
+  // 英語記事がない場合は Claude API を呼ばず日本語記事だけ返す
+  if (enArticles.length === 0) {
+    const result = articles.map(a => ({
+      id: a.id, source: a.source,
+      titleJa: a.titleOrig, summaryJa: a.summaryOrig,
+      url: a.url, pubDate: a.pubDate, groupId: null,
+    }));
+    return { articles: result, groups: [] };
+  }
+
+  // Claude に渡すリストは英語記事のみ。ただしグルーピングで日本語記事も参照できるよう
+  // 番号を全記事ベースで振り、日本語記事は参考情報として末尾に一覧する。
+  const articleList = articles.map((a, i) => {
+    const isJa = RSS_SOURCES[a.source]?.lang === 'ja';
+    return `[${i + 1}] 媒体: ${a.source}${isJa ? ' (日本語・翻訳不要)' : ''}\nタイトル: ${a.titleOrig}\n概要: ${a.summaryOrig || '(なし)'}`;
+  }).join('\n\n');
 
   const prompt = `以下は複数のニュース媒体から収集した記事一覧です。
 各記事の番号は1から始まります。
@@ -163,8 +190,8 @@ ${articleList}
   "articles": [
     {
       "index": <元の番号(整数)>,
-      "titleJa": "<タイトルの日本語訳(原文が日本語の場合はそのまま)>",
-      "summaryJa": "<概要の日本語訳、3〜5行程度。原文が日本語の場合はそのまま。概要がない場合は空文字>"
+      "titleJa": "<英語記事はタイトルの日本語訳。(日本語・翻訳不要)の記事は原文をそのまま>",
+      "summaryJa": "<英語記事は概要の日本語訳(3〜5行)。(日本語・翻訳不要)の記事は原文をそのまま。概要がない場合は空文字>"
     }
   ],
   "groups": [
@@ -177,8 +204,10 @@ ${articleList}
 }
 
 注意事項:
-- 翻訳は原文に忠実に行い、推測や補足を加えないこと
+- (日本語・翻訳不要) と表記された記事はタイトル・概要を原文のまま出力し、翻訳しないこと
+- 英語記事の翻訳は原文に忠実に行い、推測や補足を加えないこと
 - グルーピングは確信が持てる場合のみ行うこと(同じ事件・出来事を指している場合)
+- 日本語記事と英語記事を同じグループにまとめてよい(同一トピックなら)
 - 同じ媒体の記事を同じグループに入れないこと
 - グルーピングがない場合は "groups" を空配列にすること
 - JSONのみ返し、前後に説明文を付けないこと`;

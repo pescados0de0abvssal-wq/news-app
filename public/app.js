@@ -8,15 +8,17 @@ const USE_MOCK = (WORKER_URL === 'https://your-worker.your-subdomain.workers.dev
 
 // ===== 媒体メタ情報 =====
 const SOURCE_META = {
-  bbc:       { name: 'BBC News World', flag: '🇬🇧', badgeClass: 'bbc' },
-  aljazeera: { name: 'Al Jazeera English', flag: '🌍', badgeClass: 'aljazeera' },
-  nhk:       { name: 'NHK ニュース', flag: '🇯🇵', badgeClass: 'nhk' },
-  npr:       { name: 'NPR', flag: '🇺🇸', badgeClass: 'npr' },
+  bbc:        { name: 'BBC News World',     flag: '🇬🇧', badgeClass: 'bbc' },
+  aljazeera:  { name: 'Al Jazeera English', flag: '🌍',  badgeClass: 'aljazeera' },
+  npr:        { name: 'NPR',                flag: '🇺🇸', badgeClass: 'npr' },
+  toyokeizai: { name: '東洋経済オンライン', flag: '🇯🇵', badgeClass: 'toyokeizai' },
+  scmp:       { name: 'SCMP',               flag: '🇭🇰', badgeClass: 'scmp' },
 };
 
 // ===== モックデータ =====
 const MOCK_DATA = {
   articles: [
+    // ----- BBC -----
     {
       id: 'bbc-1',
       source: 'bbc',
@@ -62,6 +64,7 @@ const MOCK_DATA = {
       pubDate: '2026-05-26T14:00:00Z',
       groupId: null,
     },
+    // ----- Al Jazeera -----
     {
       id: 'aljazeera-1',
       source: 'aljazeera',
@@ -107,51 +110,7 @@ const MOCK_DATA = {
       pubDate: '2026-05-26T16:00:00Z',
       groupId: 'group-2',
     },
-    {
-      id: 'nhk-1',
-      source: 'nhk',
-      titleJa: '日本政府、防衛費増額の財源確保に向けた法案を提出',
-      summaryJa: '政府はGDP比2%への防衛費増額に必要な財源を確保するための税制改正法案を国会に提出した。法人税の付加税と復興特別所得税の延長が主な財源で、与党内からも一部異論が出ている。野党は「国民負担の増大」として強く反発しており、国会での審議が注目される。',
-      url: 'https://www.nhk.or.jp/news/',
-      pubDate: '2026-05-27T10:00:00Z',
-      groupId: null,
-    },
-    {
-      id: 'nhk-2',
-      source: 'nhk',
-      titleJa: '東京都、2040年カーボンニュートラル目標を前倒しへ',
-      summaryJa: '東京都は2040年としていたカーボンニュートラル達成目標を2038年に前倒しする方針を発表した。太陽光発電設備の設置義務化範囲の拡大と、都有施設への地中熱・水素エネルギーの活用拡大が主な施策となる。都知事は「東京がアジアの脱炭素のモデル都市になる」と強調した。',
-      url: 'https://www.nhk.or.jp/news/',
-      pubDate: '2026-05-27T08:30:00Z',
-      groupId: null,
-    },
-    {
-      id: 'nhk-3',
-      source: 'nhk',
-      titleJa: '日銀、追加利上げ検討を示唆　円相場が上昇',
-      summaryJa: '日本銀行は金融政策決定会合後の声明で、物価の安定的な上昇が続いていることを確認し、年内の追加利上げを検討する姿勢を示唆した。この発表を受けて円ドル相場は一時1ドル=145円台まで円高が進んだ。市場関係者は次の利上げ時期を7月〜9月と見ており、関連する経済指標への注目が高まっている。',
-      url: 'https://www.nhk.or.jp/news/',
-      pubDate: '2026-05-27T03:00:00Z',
-      groupId: null,
-    },
-    {
-      id: 'nhk-4',
-      source: 'nhk',
-      titleJa: '九州南部で大雨警報、河川増水に注意呼びかけ',
-      summaryJa: '梅雨前線の影響で九州南部を中心に大雨が降り続いており、気象庁は鹿児島県と宮崎県の一部地域に大雨警報を発令した。一部の河川では増水が続いており、住民に対して避難準備を促している。今後48時間でさらに100〜150ミリの降雨が予想されている。',
-      url: 'https://www.nhk.or.jp/news/',
-      pubDate: '2026-05-26T22:00:00Z',
-      groupId: null,
-    },
-    {
-      id: 'nhk-5',
-      source: 'nhk',
-      titleJa: '少子化対策、育児休業給付の拡充が成立',
-      summaryJa: '育児休業給付金の給付率を現行の67%から80%に引き上げる法改正が参議院で可決・成立した。2027年4月からの施行が予定されており、特に男性の育休取得促進が期待されている。また、保育所の待機児童解消に向けた追加整備費として総額3000億円の予算措置も盛り込まれた。',
-      url: 'https://www.nhk.or.jp/news/',
-      pubDate: '2026-05-26T13:00:00Z',
-      groupId: null,
-    },
+    // ----- NPR -----
     {
       id: 'npr-1',
       source: 'npr',
@@ -197,6 +156,98 @@ const MOCK_DATA = {
       pubDate: '2026-05-26T15:00:00Z',
       groupId: null,
     },
+    // ----- 東洋経済オンライン (日本語・翻訳不要) -----
+    {
+      id: 'toyokeizai-1',
+      source: 'toyokeizai',
+      titleJa: '米中関税摩擦が直撃、日本の輸出企業が対策を急ぐ',
+      summaryJa: '米国による対中関税引き上げの影響が日本の輸出企業に波及している。電機・自動車大手は生産拠点の分散や代替調達先の確保に動いており、業界団体は政府に対して輸出支援策の拡充を要請した。専門家は「サプライチェーンの再編は不可逆的なトレンドだ」と指摘する。',
+      url: 'https://toyokeizai.net/',
+      pubDate: '2026-05-27T10:00:00Z',
+      groupId: 'group-4',
+    },
+    {
+      id: 'toyokeizai-2',
+      source: 'toyokeizai',
+      titleJa: '日銀、追加利上げ検討を示唆　円相場が上昇',
+      summaryJa: '日本銀行は金融政策決定会合後の声明で、物価の安定的な上昇が続いていることを確認し、年内の追加利上げを検討する姿勢を示唆した。この発表を受けて円ドル相場は一時1ドル=145円台まで円高が進んだ。市場関係者は次の利上げ時期を7月〜9月と見ており、関連する経済指標への注目が高まっている。',
+      url: 'https://toyokeizai.net/',
+      pubDate: '2026-05-27T08:30:00Z',
+      groupId: null,
+    },
+    {
+      id: 'toyokeizai-3',
+      source: 'toyokeizai',
+      titleJa: '半導体工場の国内誘致、補助金効果で雇用創出4万人超',
+      summaryJa: '経済産業省の試算によると、国内誘致した半導体工場関連の雇用創出数が累計4万人を超えた。TSMCの熊本工場をはじめとする大型投資が地域経済を活性化させており、関連部品メーカーの設備投資も急増している。政府は引き続き補助金制度を維持する方針だ。',
+      url: 'https://toyokeizai.net/',
+      pubDate: '2026-05-27T06:00:00Z',
+      groupId: null,
+    },
+    {
+      id: 'toyokeizai-4',
+      source: 'toyokeizai',
+      titleJa: '少子化対策の財源問題、政府内でなお調整続く',
+      summaryJa: '政府が掲げる「異次元の少子化対策」の財源確保をめぐり、与党内の調整が難航している。社会保険料の上乗せ案に対し経済界が強く反発しており、消費税の活用案も浮上しているが、政治的なハードルは高い。専門家は「財源の不透明さが政策効果を損ねている」と指摘する。',
+      url: 'https://toyokeizai.net/',
+      pubDate: '2026-05-26T22:00:00Z',
+      groupId: null,
+    },
+    {
+      id: 'toyokeizai-5',
+      source: 'toyokeizai',
+      titleJa: '東南アジアへの製造業シフト、中小企業でも加速',
+      summaryJa: 'コスト上昇と地政学リスクを背景に、日本の中小製造業者が東南アジアへの生産移転を加速させている。ベトナムとインドネシアへの進出が特に目立ち、現地政府も積極的な投資誘致策を展開している。一方、技術流出リスクや人材確保の難しさを課題に挙げる企業も多い。',
+      url: 'https://toyokeizai.net/',
+      pubDate: '2026-05-26T14:00:00Z',
+      groupId: null,
+    },
+    // ----- SCMP -----
+    {
+      id: 'scmp-1',
+      source: 'scmp',
+      titleJa: '中国、米国の関税圧力に対応する貿易政策の転換を発表',
+      summaryJa: '中国商務省は米国の追加関税措置に対応するための新たな貿易政策パッケージを発表した。輸出企業への補助金拡充や新興国向け輸出拡大策が盛り込まれており、貿易戦争の長期化を見越した構造的対応として注目される。専門家は「中国は内需主導型への転換を加速している」と分析する。',
+      url: 'https://www.scmp.com/news/world',
+      pubDate: '2026-05-27T09:30:00Z',
+      groupId: 'group-4',
+    },
+    {
+      id: 'scmp-2',
+      source: 'scmp',
+      titleJa: '台湾海峡の軍事演習が激化、地域の緊張が高まる',
+      summaryJa: '中国人民解放軍は台湾海峡周辺での大規模演習を実施した。演習には空母打撃群と弾道ミサイル部隊が参加しており、規模は近年最大とみられている。米国は第7艦隊の一部を西太平洋に展開させ、台湾への支持を改めて表明した。',
+      url: 'https://www.scmp.com/news/world',
+      pubDate: '2026-05-27T07:00:00Z',
+      groupId: null,
+    },
+    {
+      id: 'scmp-3',
+      source: 'scmp',
+      titleJa: '香港、国家安全条例の適用範囲を拡大する改正を施行',
+      summaryJa: '香港政府は国家安全条例の対象範囲を拡大する改正法を施行した。海外在住の香港人にも適用される可能性があるとの解釈が示され、国際社会から懸念の声が上がっている。欧米各国政府は香港渡航警告を更新し、ビジネス界も法的リスクの再評価を迫られている。',
+      url: 'https://www.scmp.com/news/hong-kong',
+      pubDate: '2026-05-27T05:00:00Z',
+      groupId: null,
+    },
+    {
+      id: 'scmp-4',
+      source: 'scmp',
+      titleJa: 'ASEAN首脳会議、中国との南シナ海問題で異例の強硬姿勢',
+      summaryJa: 'シンガポールで開催されたASEAN臨時首脳会議で、加盟国は南シナ海における中国の「違法な海洋権益の主張」を明記した共同声明を発表した。ASEAN声明でこれほど直接的な表現が使われるのは異例で、中国との摩擦が新たな段階に入ったとの見方が広がっている。',
+      url: 'https://www.scmp.com/news/asia',
+      pubDate: '2026-05-26T18:00:00Z',
+      groupId: null,
+    },
+    {
+      id: 'scmp-5',
+      source: 'scmp',
+      titleJa: '中国の「一帯一路」投資、東南アジアで過去最高を更新',
+      summaryJa: '中国主導の一帯一路構想に基づく東南アジアへの投資額が今年上半期に過去最高を更新した。インフラ整備から製造業まで投資先は多岐にわたり、特にカンボジア・ラオスでの存在感が際立っている。一方、債務の持続可能性を懸念する声も現地で高まっている。',
+      url: 'https://www.scmp.com/news/asia',
+      pubDate: '2026-05-26T12:00:00Z',
+      groupId: null,
+    },
   ],
   groups: [
     {
@@ -213,6 +264,11 @@ const MOCK_DATA = {
       id: 'group-3',
       articleIds: ['bbc-4', 'aljazeera-4'],
       topic: '欧州熱波',
+    },
+    {
+      id: 'group-4',
+      articleIds: ['toyokeizai-1', 'scmp-1'],
+      topic: '米中貿易摩擦',
     },
   ],
 };

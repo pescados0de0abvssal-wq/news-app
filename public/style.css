@@ -465,10 +465,11 @@ body {
   letter-spacing: 0.04em;
 }
 
-.source-badge.bbc      { background: #bb1919; color: #fff; }
-.source-badge.aljazeera { background: #e8a020; color: #fff; }
-.source-badge.nhk      { background: #0066cc; color: #fff; }
-.source-badge.npr      { background: #2e7d32; color: #fff; }
+.source-badge.bbc        { background: #bb1919; color: #fff; }
+.source-badge.aljazeera  { background: #e8a020; color: #fff; }
+.source-badge.npr        { background: #2e7d32; color: #fff; }
+.source-badge.toyokeizai { background: #d84315; color: #fff; }
+.source-badge.scmp       { background: #0277bd; color: #fff; }
 
 .modal-close { color: var(--color-text-sub); }
 
