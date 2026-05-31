@@ -90,9 +90,14 @@ async function handleFetchNews(request, env) {
   }
 
   // 2. Claude API で翻訳・グルーピング
-  const processed = await processWithClaude(rawArticles, env.ANTHROPIC_API_KEY);
-
-  return corsResponse(JSON.stringify(processed), 200);
+  // try/catch で囲み、例外でもCORSヘッダー付きエラーを返す
+  try {
+    const processed = await processWithClaude(rawArticles, env.ANTHROPIC_API_KEY);
+    return corsResponse(JSON.stringify(processed), 200);
+  } catch (err) {
+    console.error('processWithClaude エラー:', err);
+    return corsResponse(JSON.stringify({ error: `処理エラー: ${err.message}` }), 500);
+  }
 }
 
 // ===== RSS 取得・パース =====
@@ -158,26 +163,25 @@ function stripHtml(str) {
 
 // ===== Claude API 処理 =====
 async function processWithClaude(articles, apiKey) {
-  // 日本語記事(lang:'ja')はそのまま通す。英語記事のみ Claude に渡す。
-  const jaArticles = articles.filter(a => RSS_SOURCES[a.source]?.lang === 'ja');
+  // 英語記事のみ Claude で翻訳・グルーピング。日本語記事は原文のまま返す。
   const enArticles = articles.filter(a => RSS_SOURCES[a.source]?.lang !== 'ja');
 
-  // 英語記事がない場合は Claude API を呼ばず日本語記事だけ返す
+  // 英語記事がなければ Claude API 不要
   if (enArticles.length === 0) {
-    const result = articles.map(a => ({
-      id: a.id, source: a.source,
-      titleJa: a.titleOrig, summaryJa: a.summaryOrig,
-      url: a.url, pubDate: a.pubDate, groupId: null,
-    }));
-    return { articles: result, groups: [] };
+    return {
+      articles: articles.map(a => ({
+        id: a.id, source: a.source,
+        titleJa: a.titleOrig, summaryJa: a.summaryOrig,
+        url: a.url, pubDate: a.pubDate, groupId: null,
+      })),
+      groups: [],
+    };
   }
 
-  // Claude に渡すリストは英語記事のみ。ただしグルーピングで日本語記事も参照できるよう
-  // 番号を全記事ベースで振り、日本語記事は参考情報として末尾に一覧する。
-  const articleList = articles.map((a, i) => {
-    const isJa = RSS_SOURCES[a.source]?.lang === 'ja';
-    return `[${i + 1}] 媒体: ${a.source}${isJa ? ' (日本語・翻訳不要)' : ''}\nタイトル: ${a.titleOrig}\n概要: ${a.summaryOrig || '(なし)'}`;
-  }).join('\n\n');
+  // 英語記事のみを 1-based 連番でプロンプトに渡す
+  const articleList = enArticles.map((a, i) =>
+    `[${i + 1}] 媒体: ${a.source}\nタイトル: ${a.titleOrig}\n概要: ${a.summaryOrig || '(なし)'}`
+  ).join('\n\n');
 
   const prompt = `以下は複数のニュース媒体から収集した記事一覧です。
 各記事の番号は1から始まります。
@@ -190,8 +194,8 @@ ${articleList}
   "articles": [
     {
       "index": <元の番号(整数)>,
-      "titleJa": "<英語記事はタイトルの日本語訳。(日本語・翻訳不要)の記事は原文をそのまま>",
-      "summaryJa": "<英語記事は概要の日本語訳(3〜5行)。(日本語・翻訳不要)の記事は原文をそのまま。概要がない場合は空文字>"
+      "titleJa": "<タイトルの日本語訳>",
+      "summaryJa": "<概要の日本語訳、3〜5行程度。概要がない場合は空文字>"
     }
   ],
   "groups": [
@@ -204,10 +208,8 @@ ${articleList}
 }
 
 注意事項:
-- (日本語・翻訳不要) と表記された記事はタイトル・概要を原文のまま出力し、翻訳しないこと
-- 英語記事の翻訳は原文に忠実に行い、推測や補足を加えないこと
+- 翻訳は原文に忠実に行い、推測や補足を加えないこと
 - グルーピングは確信が持てる場合のみ行うこと(同じ事件・出来事を指している場合)
-- 日本語記事と英語記事を同じグループにまとめてよい(同一トピックなら)
 - 同じ媒体の記事を同じグループに入れないこと
 - グルーピングがない場合は "groups" を空配列にすること
 - JSONのみ返し、前後に説明文を付けないこと`;
@@ -221,7 +223,7 @@ ${articleList}
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
@@ -239,24 +241,27 @@ ${articleList}
   const parsed = JSON.parse(jsonStr);
 
   // Claude の結果と元データをマージ
-  return mergeResults(articles, parsed);
+  // enArticles のインデックス(1-based)でマッピングし、日本語記事は原文のまま合成
+  return mergeResults(articles, enArticles, parsed);
 }
 
 // ===== マージ処理 =====
-function mergeResults(rawArticles, claudeResult) {
+// allArticles: 全記事(元の順序), enArticles: Claudeに渡した英語記事のみ
+function mergeResults(allArticles, enArticles, claudeResult) {
+  // Claude の翻訳結果を enArticles の 1-based インデックスでマップ
   const translationMap = {};
   for (const t of claudeResult.articles) {
     translationMap[t.index] = { titleJa: t.titleJa, summaryJa: t.summaryJa };
   }
 
-  // groupId を各記事に付与
+  // groupId を英語記事に付与(インデックスは enArticles 内の番号)
   const articleGroupMap = {};
   const groups = [];
   (claudeResult.groups || []).forEach((g, i) => {
     const groupId = g.id || `group-${i + 1}`;
     const articleIds = [];
     for (const idx of g.articleIndexes) {
-      const article = rawArticles[idx - 1];
+      const article = enArticles[idx - 1];
       if (article) {
         articleGroupMap[article.id] = groupId;
         articleIds.push(article.id);
@@ -265,15 +270,23 @@ function mergeResults(rawArticles, claudeResult) {
     groups.push({ id: groupId, articleIds, topic: g.topic });
   });
 
-  const articles = rawArticles.map((a, i) => {
-    const trans = translationMap[i + 1] || {};
+  // 全記事を元の順序で返す。日本語記事は原文、英語記事はClaudeの翻訳を使用。
+  const articles = allArticles.map(a => {
+    const isJa = RSS_SOURCES[a.source]?.lang === 'ja';
+    if (isJa) {
+      return {
+        id: a.id, source: a.source,
+        titleJa: a.titleOrig, summaryJa: a.summaryOrig,
+        url: a.url, pubDate: a.pubDate, groupId: null,
+      };
+    }
+    const enIdx = enArticles.indexOf(a);
+    const trans = enIdx >= 0 ? (translationMap[enIdx + 1] || {}) : {};
     return {
-      id: a.id,
-      source: a.source,
+      id: a.id, source: a.source,
       titleJa: trans.titleJa || a.titleOrig,
       summaryJa: trans.summaryJa || a.summaryOrig,
-      url: a.url,
-      pubDate: a.pubDate,
+      url: a.url, pubDate: a.pubDate,
       groupId: articleGroupMap[a.id] || null,
     };
   });
