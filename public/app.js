@@ -572,7 +572,7 @@ function openModal(article, relatedMap) {
   document.getElementById('modal-title').textContent   = article.titleJa;
   document.getElementById('modal-date').textContent    = formatDate(article.pubDate);
   document.getElementById('modal-summary-text').textContent = article.summaryJa;
-  document.getElementById('modal-link').href           = article.url;
+  document.getElementById('modal-link').dataset.url    = article.url;
 
   // 関連記事
   const related = relatedMap[article.id] || [];
@@ -618,6 +618,24 @@ function renderRelatedContent(article) {
     </div>
   `;
 }
+
+// ===== 元記事リンク: URLスキーム検証 =====
+document.getElementById('modal-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  const url = (e.currentTarget.dataset.url || '').trim();
+  let protocol;
+  try {
+    ({ protocol } = new URL(url));
+  } catch {
+    alert('無効なURLのため開けません。');
+    return;
+  }
+  if (protocol === 'https:' || protocol === 'http:') {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } else {
+    alert('このリンクは安全でないため開けません。');
+  }
+});
 
 // ===== モーダル閉じる =====
 document.getElementById('modal-close').addEventListener('click', hideModal);
