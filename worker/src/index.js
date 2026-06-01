@@ -50,6 +50,13 @@ export default {
 
 // ===== /api/fetch-news =====
 async function handleFetchNews(request, env) {
+  // トークン認証: Authorization: Bearer <token> を検証
+  const authHeader = request.headers.get('Authorization') || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!env.APP_SECRET_TOKEN || token !== env.APP_SECRET_TOKEN) {
+    return corsResponse(JSON.stringify({ error: 'Unauthorized' }), 401);
+  }
+
   let body;
   try {
     body = await request.json();

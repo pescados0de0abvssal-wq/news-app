@@ -2,6 +2,10 @@
 // デプロイ後にCloudflare WorkerのURLを設定してください
 const WORKER_URL = 'https://newsreader-worker.pescados.workers.dev';
 
+// Worker へのリクエストに使うシークレットトークン
+// wrangler secret put APP_SECRET_TOKEN で設定した値と一致させること
+const APP_SECRET_TOKEN = nws-a8f3k2p9x1'シークレットトークン';
+
 // trueにするとWorkerを呼ばずにモックデータを使う
 // Workerをデプロイするまでの動作確認用
 const USE_MOCK = (WORKER_URL === 'https://your-worker.your-subdomain.workers.dev');
@@ -445,7 +449,10 @@ async function fetchNews(sources) {
 
   const resp = await fetch(`${WORKER_URL}/api/fetch-news`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${APP_SECRET_TOKEN}`,
+    },
     body: JSON.stringify({ sources }),
   });
 
