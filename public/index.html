@@ -25,69 +25,10 @@
     </header>
 
     <main class="select-main">
-      <div class="section-title">ニュース媒体を選択</div>
+      <div class="section-title">取得する媒体 <span class="section-title-hint">（⚙️で変更）</span></div>
 
-      <div class="source-list">
-        <label class="source-item">
-          <input type="checkbox" name="source" value="bbc" checked>
-          <div class="source-info">
-            <span class="source-flag">🇬🇧</span>
-            <div>
-              <div class="source-name">BBC News World</div>
-              <div class="source-desc">英国公共放送の国際ニュース</div>
-            </div>
-          </div>
-          <span class="source-check">✓</span>
-        </label>
-
-        <label class="source-item">
-          <input type="checkbox" name="source" value="aljazeera" checked>
-          <div class="source-info">
-            <span class="source-flag">🌍</span>
-            <div>
-              <div class="source-name">Al Jazeera English</div>
-              <div class="source-desc">カタール発の国際ニュース</div>
-            </div>
-          </div>
-          <span class="source-check">✓</span>
-        </label>
-
-        <label class="source-item">
-          <input type="checkbox" name="source" value="npr" checked>
-          <div class="source-info">
-            <span class="source-flag">🇺🇸</span>
-            <div>
-              <div class="source-name">NPR</div>
-              <div class="source-desc">米国公共ラジオの国際ニュース</div>
-            </div>
-          </div>
-          <span class="source-check">✓</span>
-        </label>
-
-        <label class="source-item">
-          <input type="checkbox" name="source" value="toyo" checked>
-          <div class="source-info">
-            <span class="source-flag">🇯🇵</span>
-            <div>
-              <div class="source-name">東洋経済オンライン</div>
-              <div class="source-desc">日本語・ビジネス／経済ニュース</div>
-            </div>
-          </div>
-          <span class="source-check">✓</span>
-        </label>
-
-        <label class="source-item">
-          <input type="checkbox" name="source" value="scmp" checked>
-          <div class="source-info">
-            <span class="source-flag">🇭🇰</span>
-            <div>
-              <div class="source-name">SCMP</div>
-              <div class="source-desc">香港発・アジア国際ニュース</div>
-            </div>
-          </div>
-          <span class="source-check">✓</span>
-        </label>
-      </div>
+      <!-- JS で動的に描画（renderSelectedSourcesOnHome） -->
+      <div id="selected-source-list" class="selected-source-list"></div>
 
       <hr class="source-divider">
 

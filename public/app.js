@@ -416,6 +416,34 @@ function saveSelectedSources(ids) {
   localStorage.setItem('selectedSources', JSON.stringify(ids));
 }
 
+// ホーム画面の「取得する媒体」リストを再描画
+function renderSelectedSourcesOnHome() {
+  const container = document.getElementById('selected-source-list');
+  if (!container) return;
+
+  const selected = loadSelectedSources();
+  const allIds   = [...selected, FIXED_SOURCE_ID]; // 東洋経済を末尾に追加
+
+  container.innerHTML = allIds.map(id => {
+    const meta    = SOURCE_META[id];
+    const catalog = SOURCE_CATALOG.find(s => s.id === id);
+    if (!meta) return '';
+    const isFixed = (id === FIXED_SOURCE_ID);
+    const badge   = isFixed
+      ? '<span class="sdl-badge sdl-badge--fixed">固定</span>'
+      : '<span class="sdl-badge sdl-badge--selected">✓</span>';
+    return `
+      <div class="sdl-item">
+        <span class="sdl-flag">${meta.flag}</span>
+        <div class="sdl-info">
+          <span class="sdl-name">${meta.name}</span>
+          ${catalog ? `<span class="sdl-desc">${catalog.desc}</span>` : ''}
+        </div>
+        ${badge}
+      </div>`;
+  }).join('');
+}
+
 function renderHistoryMenu(open) {
   const toggleBtn = document.getElementById('btn-history');
   const menu      = document.getElementById('history-menu');
@@ -772,25 +800,12 @@ function renderSourceList() {
     });
   });
 
-  // 保存ボタン: 選択を保存してニュースを取得・一覧画面へ遷移
-  saveBtn.onclick = async () => {
+  // 保存ボタン: 選択を保存してモーダルを閉じ、ホーム画面の媒体一覧を更新するだけ
+  // （ニュース取得は「最新ニュースを取得」ボタンを押したときに行う）
+  saveBtn.onclick = () => {
     saveSelectedSources(currentSelected);
     document.getElementById('settingsModal').classList.add('hidden');
-    showLoading();
-    try {
-      const data = await fetchNews(currentSelected);
-      currentArticles = data.articles;
-      currentGroups   = data.groups;
-      saveToHistory(data, [...currentSelected, FIXED_SOURCE_ID]);
-      renderNewsList([...currentSelected, FIXED_SOURCE_ID]);
-      showScreen('list');
-      setupSectionBar();
-    } catch (err) {
-      console.error(err);
-      alert(`ニュースの取得に失敗しました。\n${err.message}`);
-    } finally {
-      hideLoading();
-    }
+    renderSelectedSourcesOnHome();
   };
 
   updateUI();
@@ -813,6 +828,9 @@ document.getElementById('settingsModal').addEventListener('click', (e) => {
     document.getElementById('settingsModal').classList.add('hidden');
   }
 });
+
+// ===== 初期化 =====
+renderSelectedSourcesOnHome(); // ホーム画面の媒体一覧を初期描画
 
 // ===== Service Worker 登録 =====
 if ('serviceWorker' in navigator) {

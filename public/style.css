@@ -112,6 +112,77 @@ body {
   margin-bottom: 0;
 }
 
+/* ===== ホーム画面: 選択媒体の表示リスト ===== */
+.section-title-hint {
+  font-size: 0.75em;
+  font-weight: 400;
+  color: var(--color-text-sub);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.selected-source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.sdl-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--color-surface2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.sdl-flag { font-size: 1.25rem; flex-shrink: 0; }
+
+.sdl-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sdl-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sdl-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sdl-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.sdl-badge--selected {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.sdl-badge--fixed {
+  background: var(--color-text-sub);
+  color: #fff;
+}
+
 .source-item {
   display: flex;
   align-items: center;
