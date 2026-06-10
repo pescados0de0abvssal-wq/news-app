@@ -21,6 +21,7 @@
       <span class="app-icon">📰</span>
       <h1>NewsReader</h1>
       <p class="app-subtitle">世界のニュースを日本語で</p>
+      <button id="settingsBtn" class="settings-btn" aria-label="設定">⚙️</button>
     </header>
 
     <main class="select-main">
@@ -159,6 +160,20 @@
   <div id="loading-overlay" class="loading-overlay" style="display:none">
     <div class="loading-spinner"></div>
     <div class="loading-text">ニュースを取得中…</div>
+  </div>
+
+  <!-- 設定モーダル -->
+  <div id="settingsModal" class="settings-modal hidden">
+    <div class="settings-content">
+      <div class="settings-header">
+        <h2>ニュース媒体を選択</h2>
+        <button id="settingsClose" class="close-btn">✕</button>
+      </div>
+      <p class="settings-note">英語媒体を5つ選んでください（東洋経済は常に含まれます）</p>
+      <p id="settingsCount" class="settings-count">0 / 5 選択中</p>
+      <ul id="sourceList" class="source-list-settings"></ul>
+      <button id="settingsSave" class="save-btn" disabled>保存する</button>
+    </div>
   </div>
 
   <script src="app.js"></script>

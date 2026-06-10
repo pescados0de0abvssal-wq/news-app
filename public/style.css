@@ -62,6 +62,7 @@ body {
 
 /* ===== 画面1: 媒体選択 ===== */
 .app-header {
+  position: relative;
   text-align: center;
   padding: 48px 24px 32px;
   background: var(--color-surface);
@@ -468,10 +469,141 @@ body {
 .source-badge.bbc        { background: #bb1919; color: #fff; }
 .source-badge.aljazeera  { background: #e8a020; color: #fff; }
 .source-badge.npr        { background: #2e7d32; color: #fff; }
-.source-badge.toyokeizai { background: #d84315; color: #fff; }
 .source-badge.scmp       { background: #0277bd; color: #fff; }
+.source-badge.reuters    { background: #ff6600; color: #fff; }
+.source-badge.guardian   { background: #005689; color: #fff; }
+.source-badge.dw         { background: #0071b5; color: #fff; }
+.source-badge.mercopress { background: #6d4c41; color: #fff; }
+.source-badge.abc_au     { background: #1a237e; color: #fff; }
+.source-badge.africanews { background: #558b2f; color: #fff; }
+.source-badge.toyo       { background: #d84315; color: #fff; }
 
 .modal-close { color: var(--color-text-sub); }
+
+/* ===== 設定ボタン（ヘッダー右上） ===== */
+.settings-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.settings-btn:hover { opacity: 1; }
+
+/* ===== 設定モーダル ===== */
+.settings-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.settings-modal.hidden { display: none; }
+
+.settings-content {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  width: min(480px, 92vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.settings-header h2 { margin: 0; font-size: 1.1rem; }
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--color-text-sub);
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  padding: 4px;
+  border-radius: 4px;
+}
+.close-btn:hover { opacity: 1; }
+
+.settings-note {
+  font-size: 0.85rem;
+  color: var(--color-text-sub);
+  margin: 4px 0 8px;
+}
+.settings-count {
+  font-size: 0.9rem;
+  font-weight: bold;
+  margin-bottom: 12px;
+  color: var(--color-text);
+}
+
+/* 媒体リスト（設定画面） */
+.source-list-settings {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.source-item-settings {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+.source-item-settings.selected {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+.source-item-settings.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.settings-source-flag   { font-size: 1.3rem; flex-shrink: 0; }
+.settings-source-info   { flex: 1; min-width: 0; }
+.settings-source-name   { font-weight: bold; font-size: 0.95rem; }
+.settings-source-region { font-size: 0.75rem; color: var(--color-text-sub); margin-left: 4px; }
+.settings-source-desc   { font-size: 0.8rem; color: var(--color-text-sub); margin-top: 2px; }
+.settings-source-check  { font-size: 1.1rem; flex-shrink: 0; width: 1.4rem; text-align: center; }
+
+/* 保存ボタン */
+.save-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.save-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.save-btn:not(:disabled):hover { opacity: 0.85; }
 
 .modal-body {
   flex: 1;

@@ -1,32 +1,21 @@
 // ===== RSS フィード設定 =====
 // lang: 'ja' の媒体は Claude API での翻訳をスキップし原文をそのまま返す
-const RSS_SOURCES = {
-  bbc: {
-    name: 'BBC News World',
-    url: 'http://feeds.bbci.co.uk/news/world/rss.xml',
-    lang: 'en',
-  },
-  aljazeera: {
-    name: 'Al Jazeera English',
-    url: 'https://www.aljazeera.com/xml/rss/all.xml',
-    lang: 'en',
-  },
-  npr: {
-    name: 'NPR',
-    url: 'https://feeds.npr.org/1004/rss.xml',
-    lang: 'en',
-  },
-  toyokeizai: {
-    name: '東洋経済オンライン',
-    url: 'https://toyokeizai.net/list/feed/rss',
-    lang: 'ja',
-  },
-  scmp: {
-    name: 'South China Morning Post',
-    url: 'https://www.scmp.com/rss/91/feed',
-    lang: 'en',
-  },
-};
+const ALL_SOURCES = [
+  { id: 'bbc',        name: 'BBC',                url: 'https://feeds.bbci.co.uk/news/world/rss.xml',       lang: 'en' },
+  { id: 'aljazeera',  name: 'Al Jazeera',         url: 'https://www.aljazeera.com/xml/rss/all.xml',         lang: 'en' },
+  { id: 'npr',        name: 'NPR',                url: 'https://feeds.npr.org/1001/rss.xml',                lang: 'en' },
+  { id: 'scmp',       name: 'SCMP',               url: 'https://www.scmp.com/rss/91/feed',                  lang: 'en' },
+  { id: 'reuters',    name: 'Reuters',            url: 'https://feeds.reuters.com/reuters/worldNews',       lang: 'en' },
+  { id: 'guardian',   name: 'The Guardian',       url: 'https://www.theguardian.com/world/rss',             lang: 'en' },
+  { id: 'dw',         name: 'Deutsche Welle',     url: 'https://rss.dw.com/rdf/rss-en-world',              lang: 'en' },
+  { id: 'mercopress', name: 'MercoPress',         url: 'https://en.mercopress.com/rss/latin-america',      lang: 'en' },
+  { id: 'abc_au',     name: 'ABC Australia',      url: 'https://www.abc.net.au/news/feed/2942460/rss.xml',  lang: 'en' },
+  { id: 'africanews', name: 'Africanews',         url: 'https://www.africanews.com/feed/rss',               lang: 'en' },
+  { id: 'toyo',       name: '東洋経済オンライン', url: 'https://toyokeizai.net/list/feed/rss',              lang: 'ja' },
+];
+
+// id → source オブジェクトのマップ（O(1)検索用）
+const SOURCE_MAP = Object.fromEntries(ALL_SOURCES.map(s => [s.id, s]));
 
 const ARTICLES_PER_SOURCE = 5;
 
@@ -40,7 +29,7 @@ export default {
 
     const url = new URL(request.url);
 
-    if (request.method === 'POST' && url.pathname === '/api/fetch-news') {
+    if ((request.method === 'POST' || request.method === 'GET') && url.pathname === '/api/fetch-news') {
       return handleFetchNews(request, env);
     }
 
@@ -57,38 +46,46 @@ async function handleFetchNews(request, env) {
     return corsResponse(JSON.stringify({ error: 'Unauthorized' }), 401);
   }
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return corsResponse(JSON.stringify({ error: 'Invalid JSON' }), 400);
+  // GET / POST 両対応: POST は body から selectedIds を取得、GET は後方互換でデフォルト使用
+  let selectedIds;
+  if (request.method === 'POST') {
+    const body = await request.json().catch(() => ({}));
+    selectedIds = Array.isArray(body.selectedIds) && body.selectedIds.length > 0
+      ? body.selectedIds
+      : null;
+  } else {
+    // GET の場合はデフォルト媒体を使う（後方互換）
+    selectedIds = null;
   }
 
-  const sources = body.sources;
-  if (!Array.isArray(sources) || sources.length === 0) {
-    return corsResponse(JSON.stringify({ error: '"sources" は空でない配列で指定してください' }), 400);
+  // selectedIds が null または空の場合はデフォルト5媒体
+  if (!selectedIds || selectedIds.length === 0) {
+    selectedIds = ['bbc', 'aljazeera', 'npr', 'scmp', 'toyo'];
   }
 
-  const unknownSources = sources.filter(s => !RSS_SOURCES[s]);
-  if (unknownSources.length > 0) {
-    return corsResponse(
-      JSON.stringify({ error: `未知の媒体: ${unknownSources.join(', ')}` }),
-      400,
-    );
+  // 東洋経済（toyo）は常に含める
+  const idsToUse = selectedIds.includes('toyo')
+    ? selectedIds
+    : [...selectedIds, 'toyo'];
+
+  // 未知の媒体IDを除外（不正なIDが混入しても安全に続行）
+  const validIds = idsToUse.filter(id => SOURCE_MAP[id]);
+  if (validIds.length === 0) {
+    return corsResponse(JSON.stringify({ error: '有効な媒体が指定されていません' }), 400);
   }
 
   // 1. RSS を並列取得
   const rssResults = await Promise.allSettled(
-    sources.map(s => fetchRss(s))
+    validIds.map(id => fetchRss(id))
   );
 
   const rawArticles = [];
-  for (let i = 0; i < sources.length; i++) {
+  for (let i = 0; i < validIds.length; i++) {
     const result = rssResults[i];
     if (result.status === 'fulfilled') {
       rawArticles.push(...result.value);
     } else {
-      console.error(`RSS取得失敗 [${sources[i]}]:`, result.reason);
+      console.error(`RSS取得失敗 [${validIds[i]}]:`, result.reason);
     }
   }
 
@@ -108,8 +105,8 @@ async function handleFetchNews(request, env) {
 }
 
 // ===== RSS 取得・パース =====
-async function fetchRss(sourceKey) {
-  const source = RSS_SOURCES[sourceKey];
+async function fetchRss(sourceId) {
+  const source = SOURCE_MAP[sourceId];
   const resp = await fetch(source.url, {
     headers: { 'User-Agent': 'NewsReader-Bot/1.0' },
     cf: { cacheTtl: 300 }, // Cloudflare CDNキャッシュ 5分
@@ -118,10 +115,10 @@ async function fetchRss(sourceKey) {
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
   const xml = await resp.text();
-  return parseRss(xml, sourceKey);
+  return parseRss(xml, sourceId);
 }
 
-function parseRss(xml, sourceKey) {
+function parseRss(xml, sourceId) {
   const items = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
   let match;
@@ -137,8 +134,8 @@ function parseRss(xml, sourceKey) {
     if (!title || !link) continue;
 
     items.push({
-      id: `${sourceKey}-${items.length + 1}`,
-      source: sourceKey,
+      id: `${sourceId}-${items.length + 1}`,
+      source: sourceId,
       titleOrig: stripHtml(title),
       summaryOrig: stripHtml(desc || ''),
       url: link.trim(),
@@ -171,7 +168,7 @@ function stripHtml(str) {
 // ===== Claude API 処理 =====
 async function processWithClaude(articles, apiKey) {
   // 英語記事のみ Claude で翻訳・グルーピング。日本語記事は原文のまま返す。
-  const enArticles = articles.filter(a => RSS_SOURCES[a.source]?.lang !== 'ja');
+  const enArticles = articles.filter(a => SOURCE_MAP[a.source]?.lang !== 'ja');
 
   // 英語記事がなければ Claude API 不要
   if (enArticles.length === 0) {
@@ -279,7 +276,7 @@ function mergeResults(allArticles, enArticles, claudeResult) {
 
   // 全記事を元の順序で返す。日本語記事は原文、英語記事はClaudeの翻訳を使用。
   const articles = allArticles.map(a => {
-    const isJa = RSS_SOURCES[a.source]?.lang === 'ja';
+    const isJa = SOURCE_MAP[a.source]?.lang === 'ja';
     if (isJa) {
       return {
         id: a.id, source: a.source,
@@ -306,7 +303,7 @@ function corsResponse(body, status = 200) {
   const headers = {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
   return new Response(body, { status, headers });

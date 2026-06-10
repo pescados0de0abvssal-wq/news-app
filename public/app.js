@@ -4,19 +4,42 @@ const WORKER_URL = 'https://newsreader-worker.pescados.workers.dev';
 
 // Worker へのリクエストに使うシークレットトークン
 // wrangler secret put APP_SECRET_TOKEN で設定した値と一致させること
-const APP_SECRET_TOKEN = 'nws-a8f3k2p9x1'; // ← wrangler secret put APP_SECRET_TOKEN で設定した値と一致させること
+const APP_SECRET_TOKEN = 'nws-a8f3k2p9x1';
 
 // trueにするとWorkerを呼ばずにモックデータを使う
 // Workerをデプロイするまでの動作確認用
 const USE_MOCK = (WORKER_URL === 'https://your-worker.your-subdomain.workers.dev');
 
-// ===== 媒体メタ情報 =====
+// ===== 媒体カタログ（設定画面用） =====
+// 東洋経済は固定のため FIXED_SOURCE_ID で別管理
+const SOURCE_CATALOG = [
+  { id: 'bbc',        name: 'BBC',            flag: '🇬🇧', region: '英国',     desc: '世界最大級の公共放送。バランス重視の国際報道' },
+  { id: 'aljazeera',  name: 'Al Jazeera',     flag: '🇶🇦', region: '中東',     desc: '中東・グローバルサウス視点の国際ニュース' },
+  { id: 'npr',        name: 'NPR',            flag: '🇺🇸', region: '米国',     desc: '米国公共ラジオ。深掘り報道と社会問題に強い' },
+  { id: 'scmp',       name: 'SCMP',           flag: '🇭🇰', region: '香港',     desc: 'アジア・中国情勢に最も詳しい英字紙' },
+  { id: 'reuters',    name: 'Reuters',        flag: '🌐',  region: '国際',     desc: '世界最大の通信社。速報・金融ニュースに強い' },
+  { id: 'guardian',   name: 'The Guardian',   flag: '🇬🇧', region: '英国',     desc: 'リベラル視点の調査報道。環境・人権問題に強い' },
+  { id: 'dw',         name: 'Deutsche Welle', flag: '🇩🇪', region: '欧州',     desc: 'ドイツ発の国際公共放送。欧州視点のニュース' },
+  { id: 'mercopress', name: 'MercoPress',     flag: '🌎',  region: '中南米',   desc: '南米・メルコスール専門の独立ニュース社' },
+  { id: 'abc_au',     name: 'ABC Australia',  flag: '🇦🇺', region: '豪州',     desc: '豪州公共放送。太平洋・オセアニア地域の報道に強い' },
+  { id: 'africanews', name: 'Africanews',     flag: '🌍',  region: 'アフリカ', desc: 'アフリカ専門のニュースチャンネル（Euronews系）' },
+];
+const FIXED_SOURCE_ID = 'toyo'; // 東洋経済は常時固定
+const MAX_SELECTABLE  = 5;      // 英語媒体の最大選択数
+
+// ===== 媒体メタ情報（バッジ・セクション表示用） =====
 const SOURCE_META = {
-  bbc:        { name: 'BBC News World',     flag: '🇬🇧', badgeClass: 'bbc' },
-  aljazeera:  { name: 'Al Jazeera English', flag: '🌍',  badgeClass: 'aljazeera' },
+  bbc:        { name: 'BBC',                flag: '🇬🇧', badgeClass: 'bbc' },
+  aljazeera:  { name: 'Al Jazeera',         flag: '🇶🇦', badgeClass: 'aljazeera' },
   npr:        { name: 'NPR',                flag: '🇺🇸', badgeClass: 'npr' },
-  toyokeizai: { name: '東洋経済オンライン', flag: '🇯🇵', badgeClass: 'toyokeizai' },
   scmp:       { name: 'SCMP',               flag: '🇭🇰', badgeClass: 'scmp' },
+  reuters:    { name: 'Reuters',            flag: '🌐',  badgeClass: 'reuters' },
+  guardian:   { name: 'The Guardian',       flag: '🇬🇧', badgeClass: 'guardian' },
+  dw:         { name: 'Deutsche Welle',     flag: '🇩🇪', badgeClass: 'dw' },
+  mercopress: { name: 'MercoPress',         flag: '🌎',  badgeClass: 'mercopress' },
+  abc_au:     { name: 'ABC Australia',      flag: '🇦🇺', badgeClass: 'abc_au' },
+  africanews: { name: 'Africanews',         flag: '🌍',  badgeClass: 'africanews' },
+  toyo:       { name: '東洋経済オンライン', flag: '🇯🇵', badgeClass: 'toyo' },
 };
 
 // ===== モックデータ =====
@@ -162,8 +185,8 @@ const MOCK_DATA = {
     },
     // ----- 東洋経済オンライン (日本語・翻訳不要) -----
     {
-      id: 'toyokeizai-1',
-      source: 'toyokeizai',
+      id: 'toyo-1',
+      source: 'toyo',
       titleJa: '米中関税摩擦が直撃、日本の輸出企業が対策を急ぐ',
       summaryJa: '米国による対中関税引き上げの影響が日本の輸出企業に波及している。電機・自動車大手は生産拠点の分散や代替調達先の確保に動いており、業界団体は政府に対して輸出支援策の拡充を要請した。専門家は「サプライチェーンの再編は不可逆的なトレンドだ」と指摘する。',
       url: 'https://toyokeizai.net/',
@@ -171,8 +194,8 @@ const MOCK_DATA = {
       groupId: 'group-4',
     },
     {
-      id: 'toyokeizai-2',
-      source: 'toyokeizai',
+      id: 'toyo-2',
+      source: 'toyo',
       titleJa: '日銀、追加利上げ検討を示唆　円相場が上昇',
       summaryJa: '日本銀行は金融政策決定会合後の声明で、物価の安定的な上昇が続いていることを確認し、年内の追加利上げを検討する姿勢を示唆した。この発表を受けて円ドル相場は一時1ドル=145円台まで円高が進んだ。市場関係者は次の利上げ時期を7月〜9月と見ており、関連する経済指標への注目が高まっている。',
       url: 'https://toyokeizai.net/',
@@ -180,8 +203,8 @@ const MOCK_DATA = {
       groupId: null,
     },
     {
-      id: 'toyokeizai-3',
-      source: 'toyokeizai',
+      id: 'toyo-3',
+      source: 'toyo',
       titleJa: '半導体工場の国内誘致、補助金効果で雇用創出4万人超',
       summaryJa: '経済産業省の試算によると、国内誘致した半導体工場関連の雇用創出数が累計4万人を超えた。TSMCの熊本工場をはじめとする大型投資が地域経済を活性化させており、関連部品メーカーの設備投資も急増している。政府は引き続き補助金制度を維持する方針だ。',
       url: 'https://toyokeizai.net/',
@@ -189,8 +212,8 @@ const MOCK_DATA = {
       groupId: null,
     },
     {
-      id: 'toyokeizai-4',
-      source: 'toyokeizai',
+      id: 'toyo-4',
+      source: 'toyo',
       titleJa: '少子化対策の財源問題、政府内でなお調整続く',
       summaryJa: '政府が掲げる「異次元の少子化対策」の財源確保をめぐり、与党内の調整が難航している。社会保険料の上乗せ案に対し経済界が強く反発しており、消費税の活用案も浮上しているが、政治的なハードルは高い。専門家は「財源の不透明さが政策効果を損ねている」と指摘する。',
       url: 'https://toyokeizai.net/',
@@ -198,8 +221,8 @@ const MOCK_DATA = {
       groupId: null,
     },
     {
-      id: 'toyokeizai-5',
-      source: 'toyokeizai',
+      id: 'toyo-5',
+      source: 'toyo',
       titleJa: '東南アジアへの製造業シフト、中小企業でも加速',
       summaryJa: 'コスト上昇と地政学リスクを背景に、日本の中小製造業者が東南アジアへの生産移転を加速させている。ベトナムとインドネシアへの進出が特に目立ち、現地政府も積極的な投資誘致策を展開している。一方、技術流出リスクや人材確保の難しさを課題に挙げる企業も多い。',
       url: 'https://toyokeizai.net/',
@@ -271,7 +294,7 @@ const MOCK_DATA = {
     },
     {
       id: 'group-4',
-      articleIds: ['toyokeizai-1', 'scmp-1'],
+      articleIds: ['toyo-1', 'scmp-1'],
       topic: '米中貿易摩擦',
     },
   ],
@@ -289,9 +312,9 @@ const screens = {
   select: document.getElementById('screen-select'),
   list:   document.getElementById('screen-list'),
 };
-const modal         = document.getElementById('modal-summary');
+const modal          = document.getElementById('modal-summary');
 const loadingOverlay = document.getElementById('loading-overlay');
-const mockNotice    = document.getElementById('mock-notice');
+const mockNotice     = document.getElementById('mock-notice');
 
 // ===== 画面遷移 =====
 function showScreen(name) {
@@ -378,6 +401,26 @@ function loadHistory() {
   }
 }
 
+// ===== 選択媒体の保存・読み込み =====
+function loadSelectedSources() {
+  try {
+    const saved = localStorage.getItem('selectedSources');
+    if (saved) {
+      const ids = JSON.parse(saved);
+      // カタログに存在するIDのみ残し、上限件数に絞る
+      return ids.filter(id => SOURCE_CATALOG.some(s => s.id === id)).slice(0, MAX_SELECTABLE);
+    }
+  } catch (e) {
+    console.warn('選択媒体の読み込みに失敗:', e);
+  }
+  // デフォルト（初回起動時）
+  return ['bbc', 'aljazeera', 'npr', 'scmp', 'dw'];
+}
+
+function saveSelectedSources(ids) {
+  localStorage.setItem('selectedSources', JSON.stringify(ids));
+}
+
 function renderHistoryMenu(open) {
   const toggleBtn = document.getElementById('btn-history');
   const menu      = document.getElementById('history-menu');
@@ -447,13 +490,17 @@ async function fetchNews(sources) {
     return { articles: filtered, groups: filteredGroups };
   }
 
+  // localStorage から選択済み媒体IDを取得し、固定の東洋経済を追加
+  const selectedIds = loadSelectedSources();
   const resp = await fetch(`${WORKER_URL}/api/fetch-news`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${APP_SECRET_TOKEN}`,
     },
-    body: JSON.stringify({ sources }),
+    body: JSON.stringify({
+      selectedIds: [...selectedIds, FIXED_SOURCE_ID],
+    }),
   });
 
   if (!resp.ok) {
@@ -485,8 +532,19 @@ function renderNewsList(selectedSources) {
 
   const relatedMap = buildRelatedMap(currentArticles, currentGroups);
 
-  for (const source of selectedSources) {
+  // 実際に記事が存在する媒体を表示（API返却順に基づく）
+  const sourcesWithArticles = selectedSources.filter(
+    s => currentArticles.some(a => a.source === s)
+  );
+  // 東洋経済は常に含める（selectedSources にない場合も）
+  if (!sourcesWithArticles.includes(FIXED_SOURCE_ID) &&
+      currentArticles.some(a => a.source === FIXED_SOURCE_ID)) {
+    sourcesWithArticles.push(FIXED_SOURCE_ID);
+  }
+
+  for (const source of sourcesWithArticles) {
     const meta     = SOURCE_META[source];
+    if (!meta) continue;
     const articles = currentArticles.filter(a => a.source === source);
     if (articles.length === 0) continue;
 
@@ -505,12 +563,12 @@ function renderNewsList(selectedSources) {
 
     // 記事リスト
     for (const article of articles) {
-      const related   = relatedMap[article.id] || [];
-      const item      = document.createElement('div');
-      item.className  = 'news-item';
+      const related  = relatedMap[article.id] || [];
+      const item     = document.createElement('div');
+      item.className = 'news-item';
 
       const relatedHtml = related.length > 0
-        ? `<span class="related-badge">🔗 関連: ${related.map(r => SOURCE_META[r.source].name).join(', ')}</span>`
+        ? `<span class="related-badge">🔗 関連: ${related.map(r => SOURCE_META[r.source]?.name || r.source).join(', ')}</span>`
         : '';
 
       item.innerHTML = `
@@ -571,15 +629,15 @@ function setupSectionBar() {
 function openModal(article, relatedMap) {
   currentModalArticle = article;
 
-  const meta = SOURCE_META[article.source];
+  const meta  = SOURCE_META[article.source] || { name: article.source, badgeClass: '' };
   const badge = document.getElementById('modal-source-badge');
   badge.textContent = meta.name;
-  badge.className = `source-badge ${meta.badgeClass}`;
+  badge.className   = `source-badge ${meta.badgeClass}`;
 
-  document.getElementById('modal-title').textContent   = article.titleJa;
-  document.getElementById('modal-date').textContent    = formatDate(article.pubDate);
+  document.getElementById('modal-title').textContent        = article.titleJa;
+  document.getElementById('modal-date').textContent         = formatDate(article.pubDate);
   document.getElementById('modal-summary-text').textContent = article.summaryJa;
-  document.getElementById('modal-link').dataset.url    = article.url;
+  document.getElementById('modal-link').dataset.url         = article.url;
 
   // 関連記事
   const related = relatedMap[article.id] || [];
@@ -601,7 +659,7 @@ function renderRelatedTabs(relatedArticles) {
   contentEl.innerHTML = '';
 
   relatedArticles.forEach((article, idx) => {
-    const meta = SOURCE_META[article.source];
+    const meta = SOURCE_META[article.source] || { flag: '', name: article.source };
     const tab  = document.createElement('button');
     tab.className   = `related-tab${idx === 0 ? ' active' : ''}`;
     tab.textContent = `${meta.flag} ${meta.name}`;
@@ -667,6 +725,95 @@ function formatDate(isoString) {
     return isoString;
   }
 }
+
+// ===== 設定画面 =====
+function renderSourceList() {
+  const selectedIds = loadSelectedSources();
+  const list     = document.getElementById('sourceList');
+  const countEl  = document.getElementById('settingsCount');
+  const saveBtn  = document.getElementById('settingsSave');
+
+  let currentSelected = [...selectedIds];
+
+  function updateUI() {
+    countEl.textContent = `${currentSelected.length} / ${MAX_SELECTABLE} 選択中`;
+    saveBtn.disabled = currentSelected.length !== MAX_SELECTABLE;
+    list.querySelectorAll('.source-item-settings').forEach(item => {
+      const id         = item.dataset.id;
+      const isSelected = currentSelected.includes(id);
+      const isFull     = currentSelected.length >= MAX_SELECTABLE && !isSelected;
+      item.classList.toggle('selected', isSelected);
+      item.classList.toggle('disabled', isFull);
+      item.querySelector('.settings-source-check').textContent = isSelected ? '✅' : '';
+    });
+  }
+
+  // 媒体リストを描画
+  list.innerHTML = SOURCE_CATALOG.map(s => `
+    <li class="source-item-settings" data-id="${s.id}">
+      <span class="settings-source-flag">${s.flag}</span>
+      <div class="settings-source-info">
+        <div class="settings-source-name">${s.name} <span class="settings-source-region">${s.region}</span></div>
+        <div class="settings-source-desc">${s.desc}</div>
+      </div>
+      <span class="settings-source-check"></span>
+    </li>
+  `).join('');
+
+  // 各アイテムのクリックで選択状態を切り替え
+  list.querySelectorAll('.source-item-settings').forEach(item => {
+    item.addEventListener('click', () => {
+      const id = item.dataset.id;
+      if (currentSelected.includes(id)) {
+        currentSelected = currentSelected.filter(x => x !== id);
+      } else if (currentSelected.length < MAX_SELECTABLE) {
+        currentSelected.push(id);
+      }
+      updateUI();
+    });
+  });
+
+  // 保存ボタン: 選択を保存してニュースを取得・一覧画面へ遷移
+  saveBtn.onclick = async () => {
+    saveSelectedSources(currentSelected);
+    document.getElementById('settingsModal').classList.add('hidden');
+    showLoading();
+    try {
+      const data = await fetchNews(currentSelected);
+      currentArticles = data.articles;
+      currentGroups   = data.groups;
+      saveToHistory(data, [...currentSelected, FIXED_SOURCE_ID]);
+      renderNewsList([...currentSelected, FIXED_SOURCE_ID]);
+      showScreen('list');
+      setupSectionBar();
+    } catch (err) {
+      console.error(err);
+      alert(`ニュースの取得に失敗しました。\n${err.message}`);
+    } finally {
+      hideLoading();
+    }
+  };
+
+  updateUI();
+}
+
+// ⚙️ボタン: 設定モーダルを開く
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  renderSourceList();
+  document.getElementById('settingsModal').classList.remove('hidden');
+});
+
+// ✕ボタン: 設定モーダルを閉じる
+document.getElementById('settingsClose').addEventListener('click', () => {
+  document.getElementById('settingsModal').classList.add('hidden');
+});
+
+// 背景クリックでも閉じる
+document.getElementById('settingsModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    document.getElementById('settingsModal').classList.add('hidden');
+  }
+});
 
 // ===== Service Worker 登録 =====
 if ('serviceWorker' in navigator) {
