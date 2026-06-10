@@ -238,6 +238,9 @@ ${articleList}
   }
 
   const claudeResult = await resp.json();
+  if (!claudeResult.content?.[0]?.text) {
+    throw new Error('Claude API から空のレスポンスを受信しました');
+  }
   const rawJson = claudeResult.content[0].text.trim();
 
   // JSONブロックが ```json ... ``` で囲まれている場合に対応

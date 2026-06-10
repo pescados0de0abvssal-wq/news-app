@@ -303,7 +303,6 @@ const MOCK_DATA = {
 // ===== 状態管理 =====
 let currentArticles = [];
 let currentGroups = [];
-let currentModalArticle = null;
 let sectionBarScrollHandler = null;
 let historyMenuOpen = false;
 
@@ -349,21 +348,17 @@ document.getElementById('btn-back').addEventListener('click', () => {
 });
 
 document.getElementById('btn-fetch').addEventListener('click', async () => {
-  const selected = Array.from(document.querySelectorAll('input[name="source"]:checked'))
-    .map(cb => cb.value);
-
-  if (selected.length === 0) {
-    alert('少なくとも1つの媒体を選択してください。');
-    return;
-  }
+  // localStorageの設定を使用（チェックボックスは表示上の参考のみ）
+  const selected = loadSelectedSources();
+  const sourcesForRender = [...selected, FIXED_SOURCE_ID];
 
   showLoading();
   try {
     const data = await fetchNews(selected);
     currentArticles = data.articles;
     currentGroups   = data.groups;
-    saveToHistory(data, selected);
-    renderNewsList(selected);
+    saveToHistory(data, sourcesForRender);
+    renderNewsList(sourcesForRender);
     showScreen('list');
     setupSectionBar();
   } catch (err) {
@@ -452,11 +447,17 @@ function renderHistoryMenu(open) {
 
     const btn = document.createElement('button');
     btn.className = 'btn-history-item';
-    btn.innerHTML = `
-      <span class="history-item-num">${idx + 1}</span>
-      <span class="history-item-date">${label}</span>
-      <span class="history-item-sources">${flags}</span>
-    `;
+    // innerHTML を使わず DOM API でテキストノードとして挿入（XSS対策）
+    const numSpan   = document.createElement('span');
+    numSpan.className   = 'history-item-num';
+    numSpan.textContent = String(idx + 1);
+    const dateSpan  = document.createElement('span');
+    dateSpan.className   = 'history-item-date';
+    dateSpan.textContent = label;
+    const flagSpan  = document.createElement('span');
+    flagSpan.className   = 'history-item-sources';
+    flagSpan.textContent = flags;
+    btn.append(numSpan, dateSpan, flagSpan);
     btn.addEventListener('click', () => {
       currentArticles = item.articles;
       currentGroups   = item.groups;
@@ -627,8 +628,6 @@ function setupSectionBar() {
 
 // ===== モーダル表示 =====
 function openModal(article, relatedMap) {
-  currentModalArticle = article;
-
   const meta  = SOURCE_META[article.source] || { name: article.source, badgeClass: '' };
   const badge = document.getElementById('modal-source-badge');
   badge.textContent = meta.name;
