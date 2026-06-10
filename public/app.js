@@ -25,7 +25,7 @@ const SOURCE_CATALOG = [
   { id: 'africanews', name: 'Africanews',     flag: '🌍',  region: 'アフリカ', desc: 'アフリカ専門のニュースチャンネル（Euronews系）' },
 ];
 const FIXED_SOURCE_ID = 'toyo'; // 東洋経済は常時固定
-const MAX_SELECTABLE  = 5;      // 英語媒体の最大選択数
+const MAX_SELECTABLE  = 6;      // 英語媒体の最大選択数（1〜6）
 
 // ===== 媒体メタ情報（バッジ・セクション表示用） =====
 const SOURCE_META = {
@@ -348,17 +348,22 @@ document.getElementById('btn-back').addEventListener('click', () => {
 });
 
 document.getElementById('btn-fetch').addEventListener('click', async () => {
-  // localStorageの設定を使用（チェックボックスは表示上の参考のみ）
-  const selected = loadSelectedSources();
-  const sourcesForRender = [...selected, FIXED_SOURCE_ID];
+  // ホーム画面でチェックされた媒体だけを取得対象にする
+  const poolIds = [...loadSelectedSources(), FIXED_SOURCE_ID];
+  const checked = loadCheckedSources(poolIds);
+
+  if (checked.length === 0) {
+    alert('少なくとも1つの媒体にチェックを入れてください。');
+    return;
+  }
 
   showLoading();
   try {
-    const data = await fetchNews(selected);
+    const data = await fetchNews(checked);
     currentArticles = data.articles;
     currentGroups   = data.groups;
-    saveToHistory(data, sourcesForRender);
-    renderNewsList(sourcesForRender);
+    saveToHistory(data, checked);
+    renderNewsList(checked);
     showScreen('list');
     setupSectionBar();
   } catch (err) {
@@ -416,32 +421,78 @@ function saveSelectedSources(ids) {
   localStorage.setItem('selectedSources', JSON.stringify(ids));
 }
 
-// ホーム画面の「取得する媒体」リストを再描画
+// ===== ホーム画面チェック状態の保存・読み込み =====
+function loadCheckedSources(poolIds) {
+  // poolIds: ホーム画面に表示される全媒体IDの配列
+  try {
+    const saved = localStorage.getItem('checkedSources');
+    if (saved) {
+      const ids   = JSON.parse(saved);
+      const valid = ids.filter(id => poolIds.includes(id));
+      if (valid.length > 0) return valid;
+    }
+  } catch (e) {
+    console.warn('チェック状態の読み込みに失敗:', e);
+  }
+  return [...poolIds]; // デフォルト: 全チェック
+}
+
+function saveCheckedSources(ids) {
+  localStorage.setItem('checkedSources', JSON.stringify(ids));
+}
+
+// ===== ホーム画面の媒体リストを再描画（チェックボックス付き） =====
 function renderSelectedSourcesOnHome() {
   const container = document.getElementById('selected-source-list');
   if (!container) return;
 
   const selected = loadSelectedSources();
-  const allIds   = [...selected, FIXED_SOURCE_ID]; // 東洋経済を末尾に追加
+  const poolIds  = [...selected, FIXED_SOURCE_ID]; // 表示対象の全媒体
+  const checked  = loadCheckedSources(poolIds);    // チェック済みの媒体
 
-  container.innerHTML = allIds.map(id => {
-    const meta    = SOURCE_META[id];
-    const catalog = SOURCE_CATALOG.find(s => s.id === id);
-    if (!meta) return '';
-    const isFixed = (id === FIXED_SOURCE_ID);
-    const badge   = isFixed
-      ? '<span class="sdl-badge sdl-badge--fixed">固定</span>'
-      : '<span class="sdl-badge sdl-badge--selected">✓</span>';
-    return `
-      <div class="sdl-item">
-        <span class="sdl-flag">${meta.flag}</span>
-        <div class="sdl-info">
-          <span class="sdl-name">${meta.name}</span>
-          ${catalog ? `<span class="sdl-desc">${catalog.desc}</span>` : ''}
-        </div>
-        ${badge}
-      </div>`;
-  }).join('');
+  // 全選択・全解除ボタン ＋ 各媒体のチェックボックス行
+  container.innerHTML = `
+    <div class="sdl-controls">
+      <button class="sdl-btn-all" id="sdl-select-all">全選択</button>
+      <button class="sdl-btn-all" id="sdl-deselect-all">全解除</button>
+    </div>
+    ${poolIds.map(id => {
+      const meta    = SOURCE_META[id];
+      const catalog = SOURCE_CATALOG.find(s => s.id === id);
+      if (!meta) return '';
+      const isChecked = checked.includes(id);
+      return `
+        <label class="sdl-item" data-id="${id}">
+          <span class="sdl-flag">${meta.flag}</span>
+          <div class="sdl-info">
+            <span class="sdl-name">${meta.name}</span>
+            ${catalog ? `<span class="sdl-desc">${catalog.desc}</span>` : ''}
+          </div>
+          <input type="checkbox" class="sdl-checkbox" data-id="${id}"${isChecked ? ' checked' : ''}>
+        </label>`;
+    }).join('')}
+  `;
+
+  // チェックボックス変更 → localStorage 保存
+  container.querySelectorAll('.sdl-checkbox').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const nowChecked = [...container.querySelectorAll('.sdl-checkbox:checked')]
+        .map(el => el.dataset.id);
+      saveCheckedSources(nowChecked);
+    });
+  });
+
+  // 全選択ボタン
+  document.getElementById('sdl-select-all').addEventListener('click', () => {
+    container.querySelectorAll('.sdl-checkbox').forEach(cb => { cb.checked = true; });
+    saveCheckedSources([...poolIds]);
+  });
+
+  // 全解除ボタン
+  document.getElementById('sdl-deselect-all').addEventListener('click', () => {
+    container.querySelectorAll('.sdl-checkbox').forEach(cb => { cb.checked = false; });
+    saveCheckedSources([]);
+  });
 }
 
 function renderHistoryMenu(open) {
@@ -519,8 +570,7 @@ async function fetchNews(sources) {
     return { articles: filtered, groups: filteredGroups };
   }
 
-  // localStorage から選択済み媒体IDを取得し、固定の東洋経済を追加
-  const selectedIds = loadSelectedSources();
+  // チェックされた媒体IDをそのまま Worker に送る
   const resp = await fetch(`${WORKER_URL}/api/fetch-news`, {
     method: 'POST',
     headers: {
@@ -528,7 +578,7 @@ async function fetchNews(sources) {
       'Authorization': `Bearer ${APP_SECRET_TOKEN}`,
     },
     body: JSON.stringify({
-      selectedIds: [...selectedIds, FIXED_SOURCE_ID],
+      selectedIds: sources,
     }),
   });
 
@@ -764,7 +814,7 @@ function renderSourceList() {
 
   function updateUI() {
     countEl.textContent = `${currentSelected.length} / ${MAX_SELECTABLE} 選択中`;
-    saveBtn.disabled = currentSelected.length !== MAX_SELECTABLE;
+    saveBtn.disabled = currentSelected.length === 0;
     list.querySelectorAll('.source-item-settings').forEach(item => {
       const id         = item.dataset.id;
       const isSelected = currentSelected.includes(id);
@@ -800,10 +850,12 @@ function renderSourceList() {
     });
   });
 
-  // 保存ボタン: 選択を保存してモーダルを閉じ、ホーム画面の媒体一覧を更新するだけ
-  // （ニュース取得は「最新ニュースを取得」ボタンを押したときに行う）
+  // 保存ボタン: 選択を保存してモーダルを閉じ、ホーム画面を更新
   saveBtn.onclick = () => {
     saveSelectedSources(currentSelected);
+    // 新しいプールで全チェック状態にリセット（新媒体は自動でチェック済みにする）
+    const newPool = [...currentSelected, FIXED_SOURCE_ID];
+    saveCheckedSources(newPool);
     document.getElementById('settingsModal').classList.add('hidden');
     renderSelectedSourcesOnHome();
   };

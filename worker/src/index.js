@@ -63,13 +63,8 @@ async function handleFetchNews(request, env) {
     selectedIds = ['bbc', 'aljazeera', 'npr', 'scmp', 'toyo'];
   }
 
-  // 東洋経済（toyo）は常に含める
-  const idsToUse = selectedIds.includes('toyo')
-    ? selectedIds
-    : [...selectedIds, 'toyo'];
-
   // 未知の媒体IDを除外（不正なIDが混入しても安全に続行）
-  const validIds = idsToUse.filter(id => SOURCE_MAP[id]);
+  const validIds = selectedIds.filter(id => SOURCE_MAP[id]);
   if (validIds.length === 0) {
     return corsResponse(JSON.stringify({ error: '有効な媒体が指定されていません' }), 400);
   }
