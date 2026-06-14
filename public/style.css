@@ -128,6 +128,18 @@ body {
   margin-bottom: 0;
 }
 
+/* ===== カテゴリ仕切りラベル（ホーム画面・設定モーダル共通） ===== */
+.source-category-label {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--color-text-sub);
+  letter-spacing: 0.05em;
+  padding: 12px 4px 4px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 4px;
+  list-style: none; /* <li>として使われる場合に備えて */
+}
+
 .sdl-controls {
   display: flex;
   gap: 8px;
@@ -585,7 +597,11 @@ body {
 .source-badge.mercopress { background: #6d4c41; color: #fff; }
 .source-badge.abc_au     { background: #1a237e; color: #fff; }
 .source-badge.africanews { background: #558b2f; color: #fff; }
-.source-badge.toyo       { background: #d84315; color: #fff; }
+.source-badge.toyo            { background: #d84315; color: #fff; }
+.source-badge.mit-tech-review { background: #6b21a8; color: #fff; }
+.source-badge.wired           { background: #111111; color: #fff; }
+.source-badge.techcrunch      { background: #0f9d58; color: #fff; }
+.source-badge.the-verge       { background: #e53935; color: #fff; }
 
 .modal-close { color: var(--color-text-sub); }
 

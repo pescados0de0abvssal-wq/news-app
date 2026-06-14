@@ -10,8 +10,13 @@ const ALL_SOURCES = [
   { id: 'dw',         name: 'Deutsche Welle',     url: 'https://rss.dw.com/rdf/rss-en-world',              lang: 'en' },
   { id: 'mercopress', name: 'MercoPress',         url: 'https://en.mercopress.com/rss/latin-america',      lang: 'en' },
   { id: 'abc_au',     name: 'ABC Australia',      url: 'https://www.abc.net.au/news/feed/2942460/rss.xml',  lang: 'en' },
-  { id: 'africanews', name: 'Africanews',         url: 'https://www.africanews.com/feed/rss',               lang: 'en' },
-  { id: 'toyo',       name: '東洋経済オンライン', url: 'https://toyokeizai.net/list/feed/rss',              lang: 'ja' },
+  { id: 'africanews',      name: 'Africanews',            url: 'https://www.africanews.com/feed/rss',               lang: 'en' },
+  { id: 'toyo',            name: '東洋経済オンライン',   url: 'https://toyokeizai.net/list/feed/rss',              lang: 'ja' },
+  // ===== テクノロジー媒体 =====
+  { id: 'mit-tech-review', name: 'MIT Technology Review', url: 'https://www.technologyreview.com/feed/',            lang: 'en' },
+  { id: 'wired',           name: 'Wired',                 url: 'https://www.wired.com/feed/rss',                   lang: 'en' },
+  { id: 'techcrunch',      name: 'TechCrunch',            url: 'https://techcrunch.com/feed/',                     lang: 'en' },
+  { id: 'the-verge',       name: 'The Verge',             url: 'https://www.theverge.com/rss/index.xml',           lang: 'en' },
 ];
 
 // id → source オブジェクトのマップ（O(1)検索用）

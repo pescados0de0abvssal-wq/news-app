@@ -22,10 +22,27 @@ const SOURCE_CATALOG = [
   { id: 'dw',         name: 'Deutsche Welle', flag: '🇩🇪', region: '欧州',     desc: 'ドイツ発の国際公共放送。欧州視点のニュース' },
   { id: 'mercopress', name: 'MercoPress',     flag: '🌎',  region: '中南米',   desc: '南米・メルコスール専門の独立ニュース社' },
   { id: 'abc_au',     name: 'ABC Australia',  flag: '🇦🇺', region: '豪州',     desc: '豪州公共放送。太平洋・オセアニア地域の報道に強い' },
-  { id: 'africanews', name: 'Africanews',     flag: '🌍',  region: 'アフリカ', desc: 'アフリカ専門のニュースチャンネル（Euronews系）' },
+  { id: 'africanews',      name: 'Africanews',            flag: '🌍',  region: 'アフリカ', desc: 'アフリカ専門のニュースチャンネル（Euronews系）' },
+  // ===== テクノロジー =====
+  { id: 'mit-tech-review', name: 'MIT Technology Review', flag: '🎓',  region: '米国',     desc: '大学発・深掘り系テクノロジーメディア' },
+  { id: 'wired',           name: 'Wired',                 flag: '💡',  region: '米国',     desc: 'テクノロジー×文化・社会を扱うメディア' },
+  { id: 'techcrunch',      name: 'TechCrunch',            flag: '🚀',  region: '米国',     desc: 'スタートアップ・ビジネス寄りのテックメディア' },
+  { id: 'the-verge',       name: 'The Verge',             flag: '📱',  region: '米国',     desc: 'ガジェット・IT全般を扱うテックメディア' },
 ];
 const FIXED_SOURCE_ID = 'toyo'; // 東洋経済は常時固定
 const MAX_SELECTABLE  = 6;      // 英語媒体の最大選択数（1〜6）
+
+// ===== 媒体カテゴリ定義（設定モーダル・ホーム画面の仕切りに使用） =====
+const SOURCE_CATEGORIES = [
+  {
+    label: '🌍 国際ニュース',
+    ids: ['bbc', 'aljazeera', 'npr', 'scmp', 'reuters', 'guardian', 'dw', 'mercopress', 'abc_au', 'africanews', 'toyo'],
+  },
+  {
+    label: '💻 テクノロジー',
+    ids: ['mit-tech-review', 'wired', 'techcrunch', 'the-verge'],
+  },
+];
 
 // ===== 媒体メタ情報（バッジ・セクション表示用） =====
 const SOURCE_META = {
@@ -39,7 +56,11 @@ const SOURCE_META = {
   mercopress: { name: 'MercoPress',         flag: '🌎',  badgeClass: 'mercopress' },
   abc_au:     { name: 'ABC Australia',      flag: '🇦🇺', badgeClass: 'abc_au' },
   africanews: { name: 'Africanews',         flag: '🌍',  badgeClass: 'africanews' },
-  toyo:       { name: '東洋経済オンライン', flag: '🇯🇵', badgeClass: 'toyo' },
+  toyo:            { name: '東洋経済オンライン',   flag: '🇯🇵', badgeClass: 'toyo' },
+  'mit-tech-review': { name: 'MIT Technology Review', flag: '🎓', badgeClass: 'mit-tech-review' },
+  wired:             { name: 'Wired',                 flag: '💡', badgeClass: 'wired' },
+  techcrunch:        { name: 'TechCrunch',            flag: '🚀', badgeClass: 'techcrunch' },
+  'the-verge':       { name: 'The Verge',             flag: '📱', badgeClass: 'the-verge' },
 };
 
 // ===== モックデータ =====
@@ -450,13 +471,13 @@ function renderSelectedSourcesOnHome() {
   const poolIds  = [...selected, FIXED_SOURCE_ID]; // 表示対象の全媒体
   const checked  = loadCheckedSources(poolIds);    // チェック済みの媒体
 
-  // 全選択・全解除ボタン ＋ 各媒体のチェックボックス行
-  container.innerHTML = `
-    <div class="sdl-controls">
-      <button class="sdl-btn-all" id="sdl-select-all">全選択</button>
-      <button class="sdl-btn-all" id="sdl-deselect-all">全解除</button>
-    </div>
-    ${poolIds.map(id => {
+  // カテゴリごとに仕切りを挿入しながら媒体チェックボックスを生成
+  let itemsHtml = '';
+  for (const cat of SOURCE_CATEGORIES) {
+    const catIds = cat.ids.filter(id => poolIds.includes(id));
+    if (catIds.length === 0) continue;
+    itemsHtml += `<div class="source-category-label">${cat.label}</div>`;
+    itemsHtml += catIds.map(id => {
       const meta    = SOURCE_META[id];
       const catalog = SOURCE_CATALOG.find(s => s.id === id);
       if (!meta) return '';
@@ -470,7 +491,16 @@ function renderSelectedSourcesOnHome() {
           </div>
           <input type="checkbox" class="sdl-checkbox" data-id="${id}"${isChecked ? ' checked' : ''}>
         </label>`;
-    }).join('')}
+    }).join('');
+  }
+
+  // 全選択・全解除ボタン ＋ カテゴリ仕切り付き媒体リスト
+  container.innerHTML = `
+    <div class="sdl-controls">
+      <button class="sdl-btn-all" id="sdl-select-all">全選択</button>
+      <button class="sdl-btn-all" id="sdl-deselect-all">全解除</button>
+    </div>
+    ${itemsHtml}
   `;
 
   // チェックボックス変更 → localStorage 保存
@@ -825,17 +855,28 @@ function renderSourceList() {
     });
   }
 
-  // 媒体リストを描画
-  list.innerHTML = SOURCE_CATALOG.map(s => `
-    <li class="source-item-settings" data-id="${s.id}">
-      <span class="settings-source-flag">${s.flag}</span>
-      <div class="settings-source-info">
-        <div class="settings-source-name">${s.name} <span class="settings-source-region">${s.region}</span></div>
-        <div class="settings-source-desc">${s.desc}</div>
-      </div>
-      <span class="settings-source-check"></span>
-    </li>
-  `).join('');
+  // 媒体リストをカテゴリ別に描画（東洋経済は固定のためCATALOGにのみ存在しない）
+  const catalogMap = Object.fromEntries(SOURCE_CATALOG.map(s => [s.id, s]));
+  let listHtml = '';
+  for (const cat of SOURCE_CATEGORIES) {
+    // SOURCE_CATALOG に存在する（= 設定画面に表示できる）IDのみ対象
+    const catSources = cat.ids
+      .filter(id => catalogMap[id])
+      .map(id => catalogMap[id]);
+    if (catSources.length === 0) continue;
+    listHtml += `<li class="source-category-label">${cat.label}</li>`;
+    listHtml += catSources.map(s => `
+      <li class="source-item-settings" data-id="${s.id}">
+        <span class="settings-source-flag">${s.flag}</span>
+        <div class="settings-source-info">
+          <div class="settings-source-name">${s.name} <span class="settings-source-region">${s.region}</span></div>
+          <div class="settings-source-desc">${s.desc}</div>
+        </div>
+        <span class="settings-source-check"></span>
+      </li>
+    `).join('');
+  }
+  list.innerHTML = listHtml;
 
   // 各アイテムのクリックで選択状態を切り替え
   list.querySelectorAll('.source-item-settings').forEach(item => {
