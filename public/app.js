@@ -4,7 +4,7 @@ const WORKER_URL = 'https://newsreader-worker.pescados.workers.dev';
 
 // Worker へのリクエストに使うシークレットトークン
 // wrangler secret put APP_SECRET_TOKEN で設定した値と一致させること
-const APP_SECRET_TOKEN = 'nws-a8f3k2p9x1';
+const APP_SECRET_TOKEN = 'nws-x763krp4q1';
 
 // trueにするとWorkerを呼ばずにモックデータを使う
 // Workerをデプロイするまでの動作確認用
