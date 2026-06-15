@@ -5,3 +5,7 @@ node_modules/
 .DS_Store
 Thumbs.db
 .claude/
+
+# 個人用の開発メモ（誤コミット防止・GitHub非公開）
+NewsReader 修正・開発ログ.txt
+ニュースアプリ開発_解説メモ.md
