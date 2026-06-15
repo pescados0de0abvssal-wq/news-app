@@ -677,13 +677,13 @@ function renderNewsList(selectedSources) {
       item.className = 'news-item';
 
       const relatedHtml = related.length > 0
-        ? `<span class="related-badge">🔗 関連: ${related.map(r => SOURCE_META[r.source]?.name || r.source).join(', ')}</span>`
+        ? `<span class="related-badge">🔗 関連: ${escapeHtml(related.map(r => SOURCE_META[r.source]?.name || r.source).join(', '))}</span>`
         : '';
 
       item.innerHTML = `
         <div class="news-item-title">${escapeHtml(article.titleJa)}</div>
         <div class="news-item-meta">
-          <span class="news-item-date">${formatDate(article.pubDate)}</span>
+          <span class="news-item-date">${escapeHtml(formatDate(article.pubDate))}</span>
           ${relatedHtml}
         </div>
       `;

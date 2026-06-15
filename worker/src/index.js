@@ -99,8 +99,10 @@ async function handleFetchNews(request, env) {
     const processed = await processWithClaude(rawArticles, env.ANTHROPIC_API_KEY);
     return corsResponse(JSON.stringify(processed), 200);
   } catch (err) {
+    // 詳細はサーバー側ログにのみ残し、クライアントには汎用メッセージを返す
+    // （Claude API のエラー本文など内部情報の漏えいを防ぐ）
     console.error('processWithClaude エラー:', err);
-    return corsResponse(JSON.stringify({ error: `処理エラー: ${err.message}` }), 500);
+    return corsResponse(JSON.stringify({ error: 'ニュースの処理中にエラーが発生しました' }), 500);
   }
 }
 
