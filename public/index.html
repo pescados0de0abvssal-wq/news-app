@@ -113,6 +113,23 @@
       <p class="settings-note">英語媒体を1〜6つ選べます（東洋経済は常に含まれます）</p>
       <p id="settingsCount" class="settings-count">0 / 6 選択中</p>
       <ul id="sourceList" class="source-list-settings"></ul>
+
+      <!-- NGワード設定 -->
+      <div class="ng-section">
+        <h3 class="ng-section-title">NGワード設定</h3>
+        <label class="ng-toggle">
+          <input type="checkbox" id="ng-enabled">
+          <span>NGワードで記事を除外する</span>
+        </label>
+        <label class="ng-field-label" for="ng-words-ja">日本語のNGワード</label>
+        <textarea id="ng-words-ja" class="ng-textarea" rows="2"
+                  placeholder="オリンピック, 五輪, ワールドカップ"></textarea>
+        <label class="ng-field-label" for="ng-words-en">英語のNGワード</label>
+        <textarea id="ng-words-en" class="ng-textarea" rows="2"
+                  placeholder="Olympics, World Cup"></textarea>
+        <p class="ng-hint">カンマ・読点・改行で区切って複数指定できます</p>
+      </div>
+
       <button id="settingsSave" class="save-btn" disabled>保存する</button>
     </div>
   </div>

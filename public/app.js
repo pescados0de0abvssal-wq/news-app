@@ -462,6 +462,35 @@ function saveCheckedSources(ids) {
   localStorage.setItem('checkedSources', JSON.stringify(ids));
 }
 
+// ===== NGワード設定の保存・読み込み =====
+function loadNgSettings() {
+  return {
+    enabled: localStorage.getItem('ngWordsEnabled') === 'true',
+    ja:      localStorage.getItem('ngWordsJa') || '',
+    en:      localStorage.getItem('ngWordsEn') || '',
+  };
+}
+
+function saveNgSettings(enabled, jaText, enText) {
+  localStorage.setItem('ngWordsEnabled', enabled ? 'true' : 'false');
+  localStorage.setItem('ngWordsJa', jaText);
+  localStorage.setItem('ngWordsEn', enText);
+}
+
+// テキストを単語配列に変換（区切り: カンマ「,」・読点「、」・改行、前後空白除去・空要素除外）
+function parseNgWords(text) {
+  return String(text || '')
+    .split(/[,、\n]/)
+    .map(w => w.trim())
+    .filter(w => w.length > 0);
+}
+
+// 日本語欄＋英語欄を1つの単語配列に結合
+function getNgWordList() {
+  const { ja, en } = loadNgSettings();
+  return [...parseNgWords(ja), ...parseNgWords(en)];
+}
+
 // ===== ホーム画面の媒体リストを再描画（チェックボックス付き） =====
 function renderSelectedSourcesOnHome() {
   const container = document.getElementById('selected-source-list');
@@ -587,10 +616,22 @@ document.getElementById('btn-history').addEventListener('click', () => {
 
 // ===== ニュース取得 =====
 async function fetchNews(sources) {
+  // NGワード設定を読み込み（ON時のみ単語リストを構築）
+  const ng       = loadNgSettings();
+  const ngWords  = ng.enabled ? getNgWordList() : [];
+
   if (USE_MOCK) {
     mockNotice.classList.add('visible');
     // モックは選択した媒体のみ絞り込む
-    const filtered = MOCK_DATA.articles.filter(a => sources.includes(a.source));
+    let filtered = MOCK_DATA.articles.filter(a => sources.includes(a.source));
+    // NGワードON時はタイトル＋要約に該当語を含む記事を除外（大文字小文字無視）
+    if (ng.enabled && ngWords.length > 0) {
+      const lowered = ngWords.map(w => w.toLowerCase());
+      filtered = filtered.filter(a => {
+        const hay = `${a.titleJa} ${a.summaryJa}`.toLowerCase();
+        return !lowered.some(w => hay.includes(w));
+      });
+    }
     // 絞り込み後に使われているgroupIdのみ残す
     const usedIds = new Set(filtered.map(a => a.groupId).filter(Boolean));
     const filteredGroups = MOCK_DATA.groups.filter(g =>
@@ -600,7 +641,7 @@ async function fetchNews(sources) {
     return { articles: filtered, groups: filteredGroups };
   }
 
-  // チェックされた媒体IDをそのまま Worker に送る
+  // チェックされた媒体IDとNGワード設定を Worker に送る
   const resp = await fetch(`${WORKER_URL}/api/fetch-news`, {
     method: 'POST',
     headers: {
@@ -609,6 +650,8 @@ async function fetchNews(sources) {
     },
     body: JSON.stringify({
       selectedIds: sources,
+      ngWordsEnabled: ng.enabled,
+      ngWords,
     }),
   });
 
@@ -891,12 +934,24 @@ function renderSourceList() {
     });
   });
 
-  // 保存ボタン: 選択を保存してモーダルを閉じ、ホーム画面を更新
+  // NGワード設定を入力欄に復元
+  const ng = loadNgSettings();
+  document.getElementById('ng-enabled').checked = ng.enabled;
+  document.getElementById('ng-words-ja').value  = ng.ja;
+  document.getElementById('ng-words-en').value  = ng.en;
+
+  // 保存ボタン: 選択とNGワード設定を保存してモーダルを閉じ、ホーム画面を更新
   saveBtn.onclick = () => {
     saveSelectedSources(currentSelected);
     // 新しいプールで全チェック状態にリセット（新媒体は自動でチェック済みにする）
     const newPool = [...currentSelected, FIXED_SOURCE_ID];
     saveCheckedSources(newPool);
+    // NGワード設定を保存
+    saveNgSettings(
+      document.getElementById('ng-enabled').checked,
+      document.getElementById('ng-words-ja').value,
+      document.getElementById('ng-words-en').value,
+    );
     document.getElementById('settingsModal').classList.add('hidden');
     renderSelectedSourcesOnHome();
   };

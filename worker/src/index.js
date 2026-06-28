@@ -53,11 +53,18 @@ async function handleFetchNews(request, env) {
 
   // GET / POST 両対応: POST は body から selectedIds を取得、GET は後方互換でデフォルト使用
   let selectedIds;
+  let ngWordsEnabled = false;
+  let ngWords = [];
   if (request.method === 'POST') {
     const body = await request.json().catch(() => ({}));
     selectedIds = Array.isArray(body.selectedIds) && body.selectedIds.length > 0
       ? body.selectedIds
       : null;
+    // NGワード設定を受け取る（文字列配列のみ採用、前後空白除去・空要素除外）
+    ngWordsEnabled = body.ngWordsEnabled === true;
+    ngWords = Array.isArray(body.ngWords)
+      ? body.ngWords.filter(w => typeof w === 'string').map(w => w.trim()).filter(Boolean)
+      : [];
   } else {
     // GET の場合はデフォルト媒体を使う（後方互換）
     selectedIds = null;
@@ -75,8 +82,10 @@ async function handleFetchNews(request, env) {
   }
 
   // 1. RSS を並列取得
+  // NGワードON時は配列（空配列含む）を渡し、OFF時は null を渡す
+  const ngFilter = ngWordsEnabled ? ngWords : null;
   const rssResults = await Promise.allSettled(
-    validIds.map(id => fetchRss(id))
+    validIds.map(id => fetchRss(id, ngFilter))
   );
 
   const rawArticles = [];
@@ -107,8 +116,13 @@ async function handleFetchNews(request, env) {
 }
 
 // ===== RSS 取得・パース =====
-async function fetchRss(sourceId) {
-  const source = SOURCE_MAP[sourceId];
+// ngWords: NGワードON時は文字列配列（空配列含む）、OFF時は null
+async function fetchRss(sourceId, ngWords) {
+  const source  = SOURCE_MAP[sourceId];
+  const enabled = Array.isArray(ngWords);
+  // NGワードON時は除外分を見込んで目標件数の2倍を取得
+  const fetchLimit = enabled ? ARTICLES_PER_SOURCE * 2 : ARTICLES_PER_SOURCE;
+
   const resp = await fetch(source.url, {
     headers: { 'User-Agent': 'NewsReader-Bot/1.0' },
     cf: { cacheTtl: 300 }, // Cloudflare CDNキャッシュ 5分
@@ -117,15 +131,29 @@ async function fetchRss(sourceId) {
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
   const xml = await resp.text();
-  return parseRss(xml, sourceId);
+  let items = parseRss(xml, sourceId, fetchLimit);
+
+  // NGワード判定: 原文タイトル＋原文要約に該当語を含む記事を除外（大文字小文字無視）
+  if (enabled && ngWords.length > 0) {
+    items = items.filter(it => !matchesNgWord(it, ngWords));
+  }
+
+  // 2倍取得しても足りない場合は残った件数のまま返す
+  return items.slice(0, ARTICLES_PER_SOURCE);
 }
 
-function parseRss(xml, sourceId) {
+// 記事の原文（Claude翻訳前）にNGワードのいずれかが含まれるか判定
+function matchesNgWord(article, ngWords) {
+  const haystack = `${article.titleOrig} ${article.summaryOrig}`.toLowerCase();
+  return ngWords.some(w => haystack.includes(w.toLowerCase()));
+}
+
+function parseRss(xml, sourceId, maxItems) {
   const items = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
   let match;
 
-  while ((match = itemRegex.exec(xml)) !== null && items.length < ARTICLES_PER_SOURCE) {
+  while ((match = itemRegex.exec(xml)) !== null && items.length < maxItems) {
     const block = match[1];
 
     const title   = extractTag(block, 'title');
